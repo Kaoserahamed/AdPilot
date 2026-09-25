@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     jwt_secret: str = "development-only-change-me"
     storage_dir: str = "./storage"
+    creative_max_file_size_bytes: int = 25_000_000
     auth_db_path: str = "./storage/adpilot.db"
     session_cookie_name: str = "adpilot_session"
     session_ttl_days: int = 7

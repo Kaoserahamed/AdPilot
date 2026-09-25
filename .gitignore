@@ -1,8 +1,7 @@
 node_modules/
+storage/
 dist/
 *.tsbuildinfo
-
-dist/
 .venv/
 __pycache__/
 .pytest_cache/

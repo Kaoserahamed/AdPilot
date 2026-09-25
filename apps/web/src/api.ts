@@ -8,7 +8,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   const response = await fetch(path, {
     ...options,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
+    headers: options.body instanceof FormData ? options.headers : { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { detail?: string } | null;

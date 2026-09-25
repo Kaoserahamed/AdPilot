@@ -76,4 +76,21 @@ PUT    /api/v1/campaigns/{id}
 DELETE /api/v1/campaigns/{id}
 ```
 
+## Creative library
+
+Creatives are stored in per-user directories with generated filenames. The API validates MIME type, size, and image dimensions, and returns metadata for images, videos, and logos. Creatives can be searched, filtered, downloaded, attached to owned campaigns, detached, and deleted.
+
+Available endpoints:
+
+```text
+GET    /api/v1/creatives
+POST   /api/v1/creatives
+GET    /api/v1/creatives/{id}/file
+POST   /api/v1/creatives/{id}/attach
+DELETE /api/v1/creatives/{id}/campaigns/{campaign_id}
+DELETE /api/v1/creatives/{id}
+```
+
+
+
 The local default is sandbox-first. Add approved OAuth credentials and set `LIVE_EXTERNAL_APIS=true` only when Meta and Google developer apps and advertising accounts are available. AdPilot never sends credentials to the browser.

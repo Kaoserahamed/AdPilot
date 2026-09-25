@@ -81,6 +81,13 @@ export function formatUpdated(value: string): string {
 }
 
 
+export type CreativeType = 'image' | 'video' | 'logo';
+export type Creative = { id: number; fileName: string; fileUrl: string; fileType: CreativeType; mimeType: string; fileSize: number; width: number | null; height: number | null; duration: number | null; createdAt: string; campaignIds: number[] };
+export type CreativeApi = { id: number; file_name: string; file_url: string; file_type: CreativeType; mime_type: string; file_size: number; width: number | null; height: number | null; duration: number | null; created_at: string; campaign_ids: number[] };
+export function toCreative(creative: CreativeApi): Creative { return { id: creative.id, fileName: creative.file_name, fileUrl: creative.file_url, fileType: creative.file_type, mimeType: creative.mime_type, fileSize: creative.file_size, width: creative.width, height: creative.height, duration: creative.duration, createdAt: creative.created_at, campaignIds: creative.campaign_ids }; }
+export function formatBytes(bytes: number): string { if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`; return `${(bytes / (1024 * 1024)).toFixed(1)} MB`; }
+
+
 export const navItems = [
   { label: 'Overview', icon: 'grid' },
   { label: 'Campaigns', icon: 'campaign', count: 3 },
