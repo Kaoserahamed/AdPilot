@@ -87,10 +87,19 @@ export type CreativeApi = { id: number; file_name: string; file_url: string; fil
 export function toCreative(creative: CreativeApi): Creative { return { id: creative.id, fileName: creative.file_name, fileUrl: creative.file_url, fileType: creative.file_type, mimeType: creative.mime_type, fileSize: creative.file_size, width: creative.width, height: creative.height, duration: creative.duration, createdAt: creative.created_at, campaignIds: creative.campaign_ids }; }
 export function formatBytes(bytes: number): string { if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`; return `${(bytes / (1024 * 1024)).toFixed(1)} MB`; }
 
+export type AIPlatformAd = { platform: 'Meta' | 'Google' | 'YouTube'; primary_text?: string; headline: string; long_headline?: string; description: string; video_hook?: string; video_script?: string; cta: string };
+export type AIContent = { strategy: { objective: string; positioning: string; channel_plan: string[] }; audience: { primary: string; insights: string[]; locations: string[] }; messaging: { value_proposition: string; proof_points: string[]; tone: string; call_to_action: string }; platform_ads: AIPlatformAd[] };
+export type AIGeneration = { id: number; campaign_id: number; provider: string; model: string; status: string; content: AIContent; created_at: string };
+export type AIGenerationApi = { id: number; campaign_id: number; provider: string; model: string; status: string; content: AIContent; created_at: string };
+export function toAIGeneration(value: AIGenerationApi): AIGeneration { return { ...value, content: { ...value.content, platform_ads: value.content.platform_ads.map((ad) => ({ ...ad })) } }; }
+
+
 
 export const navItems = [
   { label: 'Overview', icon: 'grid' },
   { label: 'Campaigns', icon: 'campaign', count: 3 },
+  { label: 'AI campaign studio', icon: 'spark' },
+
   { label: 'Creative library', icon: 'library' },
   { label: 'Analytics', icon: 'analytics' },
   { label: 'Connected platforms', icon: 'platforms' },

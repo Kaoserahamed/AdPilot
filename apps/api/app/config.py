@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     auth_db_path: str = "./storage/adpilot.db"
     session_cookie_name: str = "adpilot_session"
     session_ttl_days: int = 7
+    ai_model: str = "gpt-4o-mini"
+
     ai_api_key: str = ""
     ai_provider: str = "mock"
     live_external_apis: bool = False

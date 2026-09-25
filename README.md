@@ -92,5 +92,22 @@ DELETE /api/v1/creatives/{id}
 ```
 
 
+## AI campaign studio
+
+AI output is generated as structured data and validated before persistence. Meta copy and Google/YouTube copy use separate schemas. The review studio supports generation, regeneration, shortening, expansion, tone changes, CTA changes, direct copy editing, and reviewed-content saves. Generated content is never published automatically.
+
+Available endpoints:
+
+```text
+GET  /api/v1/ai/campaigns/{campaign_id}/generation
+POST /api/v1/ai/generate-campaign
+POST /api/v1/ai/regenerate
+POST /api/v1/ai/edit
+PUT  /api/v1/ai/generations/{generation_id}
+```
+
+The default provider is `sandbox`. Set `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL` to opt into a configured provider.
+
+
 
 The local default is sandbox-first. Add approved OAuth credentials and set `LIVE_EXTERNAL_APIS=true` only when Meta and Google developer apps and advertising accounts are available. AdPilot never sends credentials to the browser.
