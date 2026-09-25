@@ -1,0 +1,16 @@
+{
+  "name": "adpilot",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/web"],
+  "scripts": {
+    "dev": "npm run dev --workspace @adpilot/web",
+    "build": "npm run build --workspace @adpilot/web",
+    "lint": "npm run lint --workspace @adpilot/web",
+    "typecheck": "npm run typecheck --workspace @adpilot/web",
+    "test": "npm run test --workspace @adpilot/web",
+    "api:dev": "python -m uvicorn app.main:app --app-dir apps/api --reload --port 8000",
+    "api:test": "python -m pytest apps/api/tests"
+  },
+  "engines": { "node": ">=20" }
+}
