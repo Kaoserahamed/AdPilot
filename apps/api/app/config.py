@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     jwt_secret: str = "development-only-change-me"
     storage_dir: str = "./storage"
+    auth_db_path: str = "./storage/adpilot.db"
+    session_cookie_name: str = "adpilot_session"
+    session_ttl_days: int = 7
     ai_api_key: str = ""
     ai_provider: str = "mock"
     live_external_apis: bool = False

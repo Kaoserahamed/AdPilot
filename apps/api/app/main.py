@@ -1,12 +1,22 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .auth import init_db, router as auth_router
 from .config import settings
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
 
 app = FastAPI(
     title="AdPilot API",
     version="0.1.0",
     description="Modular API for AI-assisted advertising workflows.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -16,6 +26,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
 
 
 @app.get("/api/health", tags=["system"])
