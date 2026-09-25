@@ -108,6 +108,22 @@ PUT  /api/v1/ai/generations/{generation_id}
 
 The default provider is `sandbox`. Set `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL` to opt into a configured provider.
 
+## Platform adapters
+
+Advertising integrations implement a shared adapter contract for account discovery, campaign validation, creative upload, campaign/ad creation, publishing, pause, status, and metrics. Meta, Google Ads, and YouTube use deterministic sandbox adapters by default. Connected account tokens are encrypted at rest with Fernet-derived key material and are never returned by the API.
+
+Available endpoints:
+
+```text
+GET    /api/v1/platforms
+GET    /api/v1/platforms/accounts
+POST   /api/v1/platforms/accounts/connect
+DELETE /api/v1/platforms/accounts/{account_id}
+```
+
+Live OAuth clients can be added behind the adapter contract when approved Meta and Google developer credentials are configured.
+
+
 
 
 The local default is sandbox-first. Add approved OAuth credentials and set `LIVE_EXTERNAL_APIS=true` only when Meta and Google developer apps and advertising accounts are available. AdPilot never sends credentials to the browser.

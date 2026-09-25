@@ -93,6 +93,9 @@ export type AIGeneration = { id: number; campaign_id: number; provider: string; 
 export type AIGenerationApi = { id: number; campaign_id: number; provider: string; model: string; status: string; content: AIContent; created_at: string };
 export function toAIGeneration(value: AIGenerationApi): AIGeneration { return { ...value, content: { ...value.content, platform_ads: value.content.platform_ads.map((ad) => ({ ...ad })) } }; }
 
+export type PlatformCapability = { platform: string; label: string; connected: boolean; supports_oauth: boolean; supports_video: boolean; supports_metrics: boolean; supports_pause: boolean; sandbox: boolean };
+export type ConnectedAccount = { id: number; platform: string; platform_label: string; external_account_id: string; name: string; currency: string; status: string; connected_at: string; sandbox: boolean };
+
 
 
 export const navItems = [

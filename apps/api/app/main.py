@@ -6,6 +6,7 @@ from .auth import init_db, router as auth_router
 from .ai import init_ai_db, router as ai_router
 from .campaigns import init_campaign_db, router as campaigns_router
 from .creatives import init_creative_db, router as creatives_router
+from .platforms import init_platform_db, router as platforms_router
 from .config import settings
 
 
@@ -15,6 +16,7 @@ async def lifespan(_: FastAPI):
     init_campaign_db()
     init_creative_db()
     init_ai_db()
+    init_platform_db()
     yield
 
 
@@ -37,6 +39,7 @@ app.include_router(auth_router)
 app.include_router(campaigns_router)
 app.include_router(creatives_router)
 app.include_router(ai_router)
+app.include_router(platforms_router)
 
 
 @app.get("/api/health", tags=["system"])
