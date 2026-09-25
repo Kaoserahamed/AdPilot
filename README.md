@@ -61,4 +61,19 @@ POST /api/v1/auth/password-reset/confirm
 
 ## Live integrations
 
+
+## Campaign management
+
+Campaign briefs are persisted per authenticated user with the required fields from the PRD: product, description, objective, location, audience, budget, duration, landing page, tone, offer, and selected platforms. Campaign ownership is enforced on list, detail, update, and delete operations, and create/update/delete actions are recorded in the activity log.
+
+Available endpoints:
+
+```text
+GET    /api/v1/campaigns
+POST   /api/v1/campaigns
+GET    /api/v1/campaigns/{id}
+PUT    /api/v1/campaigns/{id}
+DELETE /api/v1/campaigns/{id}
+```
+
 The local default is sandbox-first. Add approved OAuth credentials and set `LIVE_EXTERNAL_APIS=true` only when Meta and Google developer apps and advertising accounts are available. AdPilot never sends credentials to the browser.

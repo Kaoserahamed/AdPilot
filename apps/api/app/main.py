@@ -3,12 +3,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .auth import init_db, router as auth_router
+from .campaigns import init_campaign_db, router as campaigns_router
 from .config import settings
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
+    init_campaign_db()
     yield
 
 
@@ -28,6 +30,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(campaigns_router)
 
 
 @app.get("/api/health", tags=["system"])

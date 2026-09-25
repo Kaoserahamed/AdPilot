@@ -1,19 +1,85 @@
-export type CampaignStatus = 'Active' | 'Draft' | 'Pending review';
+export type CampaignStatus = 'Active' | 'Draft' | 'Pending review' | string;
 
 export type Campaign = {
+  id: number;
   name: string;
   product: string;
+  description: string;
+  objective: string;
+  location: string;
+  audience: string;
+  budget: number;
+  currency: string;
+  durationDays: number;
+  landingPage: string;
+  tone: string;
+  offer?: string | null;
   platforms: string[];
   status: CampaignStatus;
-  spend: string;
-  updated: string;
+  spend: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export const initialCampaigns: Campaign[] = [
-  { name: 'Summer launch · Pro workspace', product: 'Pro workspace', platforms: ['Meta', 'Google'], status: 'Active', spend: '$1,248.60', updated: 'Today, 9:42 AM' },
-  { name: 'Founders course · Spring intake', product: 'Founders course', platforms: ['Google', 'YouTube'], status: 'Pending review', spend: '$684.20', updated: 'Yesterday, 4:18 PM' },
-  { name: 'New collection awareness', product: 'Spring collection', platforms: ['Meta'], status: 'Draft', spend: '$0.00', updated: 'Mar 18, 2026' },
+  { id: 1, name: 'Summer launch · Pro workspace', product: 'Pro workspace', description: 'Demo campaign', objective: 'sales', location: 'United States', audience: 'Founders', budget: 1500, currency: 'USD', durationDays: 30, landingPage: 'https://example.com', tone: 'Confident', platforms: ['Meta', 'Google'], status: 'Active', spend: 1248.6, createdAt: '2026-03-20T09:00:00Z', updatedAt: '2026-03-24T09:42:00Z' },
+  { id: 2, name: 'Founders course · Spring intake', product: 'Founders course', description: 'Demo campaign', objective: 'leads', location: 'Global', audience: 'Entrepreneurs', budget: 900, currency: 'USD', durationDays: 21, landingPage: 'https://example.com/course', tone: 'Expert', platforms: ['Google', 'YouTube'], status: 'Pending review', spend: 684.2, createdAt: '2026-03-19T09:00:00Z', updatedAt: '2026-03-23T16:18:00Z' },
+  { id: 3, name: 'New collection awareness', product: 'Spring collection', description: 'Demo campaign', objective: 'brand_awareness', location: 'United States', audience: 'Design-conscious shoppers', budget: 600, currency: 'USD', durationDays: 14, landingPage: 'https://example.com/collection', tone: 'Casual', platforms: ['Meta'], status: 'Draft', spend: 0, createdAt: '2026-03-18T09:00:00Z', updatedAt: '2026-03-18T09:00:00Z' },
 ];
+
+export type CampaignApi = {
+  id: number;
+  name: string;
+  product: string;
+  description: string;
+  objective: string;
+  location: string;
+  audience: string;
+  budget: number;
+  currency: string;
+  duration_days: number;
+  landing_page: string;
+  tone: string;
+  offer?: string | null;
+  platforms: string[];
+  status: string;
+  spend: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export function toCampaign(campaign: CampaignApi): Campaign {
+  return {
+    id: campaign.id,
+    name: campaign.name,
+    product: campaign.product,
+    description: campaign.description,
+    objective: campaign.objective,
+    location: campaign.location,
+    audience: campaign.audience,
+    budget: campaign.budget,
+    currency: campaign.currency,
+    durationDays: campaign.duration_days,
+    landingPage: campaign.landing_page,
+    tone: campaign.tone,
+    offer: campaign.offer,
+    platforms: campaign.platforms,
+    status: campaign.status,
+    spend: campaign.spend,
+    createdAt: campaign.created_at,
+    updatedAt: campaign.updated_at,
+  };
+}
+
+export function formatSpend(campaign: Campaign): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: campaign.currency || 'USD' }).format(campaign.spend);
+}
+
+export function formatUpdated(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 
 export const navItems = [
   { label: 'Overview', icon: 'grid' },
