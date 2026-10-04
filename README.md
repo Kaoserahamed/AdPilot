@@ -159,6 +159,24 @@ Secrets are **not** baked into the image or `compose.yaml`. Supply them through 
 
 CI builds the image and smoke tests `/api/health` and `/api/ready` against a running container, so a broken image fails the pipeline before release.
 
+## End-to-end validation
+
+`apps/api/tests/test_e2e_journey.py` walks the full PRD §21 release criteria through public HTTP endpoints only:
+
+```text
+Register → Login → Create campaign → Upload creative → Generate AI content
+→ Edit content → Validate → Review → Connect account → Publish
+→ Retrieve metrics → View dashboard → Ask AI to summarise → Audit trail
+```
+
+A second test asserts that every release-criteria endpoint exists and rejects anonymous access with `401`, while `/api/health`, `/api/ready`, and `/api/v1/monitoring/health-metrics` stay public for load balancers.
+
+Run it alone with:
+
+```bash
+python -m pytest apps/api/tests/test_e2e_journey.py
+```
+
 ## Repository quality scoring
 
 `tools/repo_score` measures this repository across weighted categories and reports a composite grade. It is read-only: it inspects the checkout and never rewrites code.
