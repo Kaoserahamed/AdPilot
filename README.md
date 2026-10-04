@@ -40,6 +40,42 @@ tools/repo_score  repository quality scorer
 storage        local development uploads (ignored)
 ```
 
+## Publishing workflow
+
+Publishing is asynchronous (PRD §8.16). `POST /api/v1/campaigns/{id}/publish` re-validates ownership and review state, persists a publishing job, then hands it to a queue. The request returns `202` immediately; the worker performs the platform calls and updates status.
+
+```text
+POST /api/v1/campaigns/{id}/publish
+GET  /api/v1/campaigns/{id}/status
+POST /api/v1/campaigns/{id}/pause
+GET  /api/v1/publishing/jobs
+POST /api/v1/publishing/jobs/{job_id}/retry
+```
+
+Campaigns move through `DRAFT → READY → PUBLISHING → PENDING_REVIEW → ACTIVE | PAUSED | REJECTED | FAILED`. Publishing requires a prior review confirmation and at least one connected account per selected platform. A duplicate publish while a job is queued or running returns `409`, and retries stop at three attempts.
+
+Job rows are committed before the queue is touched, so a queue failure cannot lose work. Worker exceptions are recorded on the job and reflected in campaign status instead of leaking internal detail.
+
+### Queue backend
+
+`app/jobs.py` defines a `JobQueue` protocol so the backend is replaceable (PRD §8.17) without touching callers:
+
+- `ThreadQueue` (default) runs jobs on a background thread pool.
+- `InlineQueue` runs jobs synchronously; tests use it so assertions never race the worker.
+- `RecordingQueue` captures submissions without executing them.
+
+A Celery + Redis backend only needs to implement `JobQueue` and be installed with `set_queue`.
+
+## Activity log
+
+Every important action is recorded (PRD §8.21).
+
+```text
+GET /api/v1/activity
+GET /api/v1/activity?campaign_id={id}&limit={n}
+GET /api/v1/activity/recent?limit={n}
+```
+
 ## Repository quality scoring
 
 `tools/repo_score` measures this repository across weighted categories and reports a composite grade. It is read-only: it inspects the checkout and never rewrites code.

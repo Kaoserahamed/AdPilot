@@ -150,12 +150,6 @@ def get_adapter(platform: str) -> AdPlatformAdapter:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported advertising platform")
     return adapter
 
-    def create_ad(self, ad: dict[str, object]) -> dict[str, object]: ...
-    def publish_campaign(self, external_campaign_id: str) -> dict[str, object]: ...
-    def pause_campaign(self, external_campaign_id: str) -> dict[str, object]: ...
-    def get_campaign_status(self, external_campaign_id: str) -> dict[str, object]: ...
-    def get_metrics(self, external_campaign_id: str) -> dict[str, object]: ...
-
 
 def _fernet() -> Fernet:
     digest = hashlib.sha256(settings.jwt_secret.encode()).digest()
@@ -171,14 +165,10 @@ def _decrypt_token(value: str) -> str:
         return _fernet().decrypt(value.encode()).decode()
     except InvalidToken as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Stored platform credential cannot be decrypted") from error
-    connection = sqlite3.connect(settings.auth_db_path)
+
 
 def _database() -> sqlite3.Connection:
     connection = sqlite3.connect(settings.auth_db_path)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
-
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     return connection
@@ -207,10 +197,14 @@ def init_platform_db() -> None:
                 campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
                 connected_account_id INTEGER NOT NULL REFERENCES connected_accounts(id) ON DELETE CASCADE,
                 platform TEXT NOT NULL, external_campaign_id TEXT NOT NULL, status TEXT NOT NULL,
+                detail TEXT,
                 created_at TEXT NOT NULL, updated_at TEXT NOT NULL
             );
             """
         )
+        columns = {row["name"] for row in connection.execute("PRAGMA table_info(platform_campaigns)").fetchall()}
+        if "detail" not in columns:
+            connection.execute("ALTER TABLE platform_campaigns ADD COLUMN detail TEXT")
 
 
 def _user(session_token: str | None = Cookie(default=None, alias=settings.session_cookie_name)):
