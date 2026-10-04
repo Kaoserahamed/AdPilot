@@ -70,7 +70,7 @@ pyproject-hooks==1.3.3
     # via
     #   build
     #   pip-tools
-pytest==9.0.3
+pytest==9.1.1
     # via
     #   -r requirements.txt
     #   pytest-cov
