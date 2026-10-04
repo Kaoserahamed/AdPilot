@@ -153,12 +153,13 @@ describe('AnalyticsDashboard', () => {
   });
 
   it('syncs metrics for the selected campaign', async () => {
-    const fetchMock = vi.fn();
     mockRoutes({
       '/api/v1/analytics/overview': overview(),
       'POST /api/v1/analytics/campaigns/1/sync': {},
     });
-    vi.stubGlobal('fetch', fetchMock);
+    // Read the installed mock rather than replacing it, so the route table stays
+    // in effect and only the call log is inspected.
+    const fetchMock = vi.mocked(fetch);
     render(<AnalyticsDashboard campaigns={CAMPAIGNS} />);
     const user = userEvent.setup();
 
