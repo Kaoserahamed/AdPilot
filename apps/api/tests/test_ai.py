@@ -1,8 +1,12 @@
+"""AI provider selection and generation tests."""
+
 from pathlib import Path
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from app.ai import GeminiProvider, OpenAIProvider, SandboxProvider, get_provider
 from app.main import app
 
 
@@ -12,6 +16,72 @@ def ai_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     with TestClient(app) as client:
         assert client.post("/api/v1/auth/register", json={"name": "AI Owner", "email": "ai@example.com", "password": "correct-horse-battery"}).status_code == 201
         yield client
+
+
+@pytest.fixture()
+def provider_settings(monkeypatch: pytest.MonkeyPatch):
+    """Point the provider resolver at explicit provider/key values."""
+
+    def apply(provider: str, api_key: str) -> None:
+        monkeypatch.setattr("app.ai.settings.ai_provider", provider)
+        monkeypatch.setattr("app.ai.settings.ai_api_key", api_key)
+
+    return apply
+
+
+def test_default_provider_is_the_sandbox(provider_settings) -> None:
+    provider_settings("mock", "")
+    assert isinstance(get_provider(), SandboxProvider)
+
+
+def test_sandbox_alias_resolves_without_a_key(provider_settings) -> None:
+    # `sandbox` is the value documented in the README and defaulted in
+    # compose.yaml, so it must not be rejected.
+    provider_settings("sandbox", "")
+    assert isinstance(get_provider(), SandboxProvider)
+
+
+def test_sandbox_alias_still_resolves_when_a_key_is_present(provider_settings) -> None:
+    # Regression: a user following the README who also sets an API key would
+    # previously get a 503 because only the literal "mock" was recognised.
+    provider_settings("sandbox", "sk-configured-but-sandbox-requested")
+    assert isinstance(get_provider(), SandboxProvider)
+
+
+def test_provider_name_is_matched_case_insensitively(provider_settings) -> None:
+    provider_settings("SandBox", "")
+    assert isinstance(get_provider(), SandboxProvider)
+
+
+def test_openai_provider_requires_a_key(provider_settings) -> None:
+    provider_settings("openai", "sk-test-key")
+    provider = get_provider()
+
+    assert isinstance(provider, OpenAIProvider)
+    assert provider.name == "openai"
+
+
+def test_gemini_provider_requires_a_key(provider_settings) -> None:
+    provider_settings("gemini", "gemini-test-key")
+    assert isinstance(get_provider(), GeminiProvider)
+
+
+def test_configured_provider_falls_back_to_sandbox_without_a_key(provider_settings) -> None:
+    # Asking for OpenAI with no key must not attempt a real call; the sandbox
+    # keeps a fresh clone working with zero credentials.
+    provider_settings("openai", "")
+    assert isinstance(get_provider(), SandboxProvider)
+
+
+def test_unknown_provider_is_rejected_and_names_the_bad_value(provider_settings) -> None:
+    provider_settings("not-a-provider", "sk-test-key")
+
+    with pytest.raises(HTTPException) as raised:
+        get_provider()
+
+    assert raised.value.status_code == 503
+    # The message must name the offending value so it is actionable.
+    assert "not-a-provider" in raised.value.detail
 
 
 def campaign_payload() -> dict[str, object]:

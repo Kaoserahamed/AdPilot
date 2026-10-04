@@ -231,4 +231,3 @@ def analyze_performance(payload: AnalyzeRequest, user=Depends(_user)) -> AnswerR
         provider=provider.name,
         model=provider.model,
     )
-    return row

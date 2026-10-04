@@ -155,14 +155,35 @@ class GeminiProvider(SandboxProvider):
         self.model = settings.ai_model
 
 
+#: Provider names that resolve to the deterministic sandbox implementation.
+#: Both spellings are accepted because `sandbox` is the name the provider
+#: reports and the default documented in the README and compose file, while
+#: `mock` is the traditional configuration value.
+SANDBOX_ALIASES = frozenset({"sandbox", "mock"})
+
+#: Provider names that require `AI_API_KEY` to be set.
+CONFIGURED_PROVIDERS = {"openai": OpenAIProvider, "gemini": GeminiProvider}
+
+
 def get_provider() -> AIProvider:
-    if not settings.ai_api_key or settings.ai_provider == "mock":
+    """Resolve the configured AI provider.
+
+    Falls back to the sandbox whenever no API key is present, so a fresh clone
+    works with no credentials at all. An unrecognised name is rejected only
+    when a key *is* configured; without one there is nothing to misconfigure.
+    """
+
+    if not settings.ai_api_key or settings.ai_provider.lower() in SANDBOX_ALIASES:
         return SandboxProvider()
-    if settings.ai_provider == "openai":
-        return OpenAIProvider()
-    if settings.ai_provider == "gemini":
-        return GeminiProvider()
-    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Configured AI provider is not supported")
+
+    provider_class = CONFIGURED_PROVIDERS.get(settings.ai_provider.lower())
+    if provider_class is not None:
+        return provider_class()
+
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail=f"Configured AI provider is not supported: {settings.ai_provider}",
+    )
 
 
 def _database() -> sqlite3.Connection:
