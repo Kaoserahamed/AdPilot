@@ -6,7 +6,7 @@ database and the in-process queue, so no new infrastructure is required.
 """
 
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends
 from pydantic import BaseModel
@@ -55,7 +55,7 @@ def build_snapshot(window_hours: int) -> MonitoringSnapshot:
 
     init_publishing_db()
     init_analytics_db()
-    since = (datetime.now(timezone.utc) - timedelta(hours=window_hours)).isoformat()
+    since = (datetime.now(UTC) - timedelta(hours=window_hours)).isoformat()
     with _database() as connection:
         counts = {row["status"]: row["total"] for row in connection.execute("SELECT status, COUNT(*) AS total FROM publishing_jobs GROUP BY status").fetchall()}
         campaigns = {row["status"]: row["total"] for row in connection.execute("SELECT status, COUNT(*) AS total FROM campaigns GROUP BY status").fetchall()}
@@ -63,7 +63,7 @@ def build_snapshot(window_hours: int) -> MonitoringSnapshot:
         activity = connection.execute("SELECT COUNT(*) AS total FROM activity_logs WHERE created_at >= ?", (since,)).fetchone()["total"]
 
     return MonitoringSnapshot(
-        generated_at=datetime.now(timezone.utc).isoformat(),
+        generated_at=datetime.now(UTC).isoformat(),
         window_hours=window_hours,
         jobs=JobCounts(
             queued=counts.get("QUEUED", 0),

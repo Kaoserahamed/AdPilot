@@ -10,8 +10,8 @@ import pytest
 from tools.repo_score import config, score_repository
 from tools.repo_score.cli import main
 from tools.repo_score.report import to_json, to_text
+from tools.tests.conftest import write
 
-from tools.tests.conftest import _check, healthy_repo, write
 # --- Aggregation and reporting ---------------------------------------------
 
 

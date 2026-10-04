@@ -10,12 +10,11 @@ Metric synchronization runs through the same replaceable queue as publishing
 (PRD §8.17), so a slow platform cannot block a dashboard request.
 """
 
-import json
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Response, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Cookie, Depends, HTTPException, status
+from pydantic import BaseModel
 
 from .auth import _current_user
 from .config import settings
@@ -120,7 +119,7 @@ def init_analytics_db() -> None:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _user(session_token: str | None = Cookie(default=None, alias=settings.session_cookie_name)):
@@ -162,7 +161,7 @@ def sync_campaign_metrics(campaign_id: int, user_id: int) -> None:
     init_analytics_db()
     # Snap the reporting period to the UTC day so repeated syncs upsert the same
     # rows instead of appending a new snapshot on every call.
-    period_end = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    period_end = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     period_start = period_end - timedelta(days=REPORTING_PERIOD_DAYS)
 
     with _database() as connection:

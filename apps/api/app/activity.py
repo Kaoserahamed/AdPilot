@@ -5,7 +5,6 @@ so users and support can audit what happened and when.
 """
 
 import sqlite3
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, status
 from pydantic import BaseModel

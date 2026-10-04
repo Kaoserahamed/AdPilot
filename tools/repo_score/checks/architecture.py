@@ -10,7 +10,6 @@ from ..config import (
     MAX_FUNCTION_LINES_FAIL,
     MAX_FUNCTION_LINES_WARN,
     MAX_MODULE_LINES_PASS,
-    MAX_MODULE_LINES_WARN,
 )
 from ..models import CheckResult, Status
 from ..repo import RepoContext, SourceFile

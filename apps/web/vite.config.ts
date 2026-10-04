@@ -14,6 +14,11 @@ export default defineConfig({
     globals: false,
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // The suites drive real user-event interactions, which are slow enough to
+    // exceed the 1s default when the API suite runs in parallel on a loaded CI
+    // runner. A larger budget keeps those tests from failing on timing alone.
+    testTimeout: 20000,
+    hookTimeout: 20000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

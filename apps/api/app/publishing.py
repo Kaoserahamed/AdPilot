@@ -12,7 +12,7 @@ is always derived from stored job and platform records.
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status
@@ -111,7 +111,7 @@ def init_publishing_db() -> None:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _user(session_token: str | None = Cookie(default=None, alias=settings.session_cookie_name)):

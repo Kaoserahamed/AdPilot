@@ -1,4 +1,3 @@
-import base64
 import sqlite3
 from pathlib import Path
 
@@ -6,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.platforms import MetaAdapter, GoogleAdsAdapter, _decrypt_token, _encrypt_token
+from app.platforms import GoogleAdsAdapter, MetaAdapter, _decrypt_token, _encrypt_token
 
 
 @pytest.fixture()

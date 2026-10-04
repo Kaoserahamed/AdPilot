@@ -12,7 +12,7 @@ def _workflows(context: RepoContext) -> dict[str, str]:
     if not context.exists(".github/workflows"):
         return {}
     workflows = {}
-    for path, relative in context.iter_paths({".yml", ".yaml"}):
+    for _, relative in context.iter_paths({".yml", ".yaml"}):
         if relative.startswith(".github/workflows/"):
             workflows[relative] = context.read(relative)
     return workflows
@@ -36,7 +36,7 @@ def run(context: RepoContext) -> list[CheckResult]:
     )
 
     combined = "\n".join(workflows.values()).lower()
-    missing = [stage for stage in REQUIRED_STAGES if f"run:" in combined and stage not in combined]
+    missing = [stage for stage in REQUIRED_STAGES if "run:" in combined and stage not in combined]
     if missing:
         results.append(
             CheckResult(

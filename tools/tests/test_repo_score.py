@@ -14,9 +14,7 @@ from tools.repo_score import config
 from tools.repo_score.checks import architecture, testing
 from tools.repo_score.models import CategoryScore, CheckResult, Status, grade_for
 from tools.repo_score.repo import RepoContext, is_test_path
-
-from tools.tests.conftest import _check, healthy_repo, write
-
+from tools.tests.conftest import _check, write
 
 # --- Models and config ------------------------------------------------------
 

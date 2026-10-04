@@ -1,16 +1,13 @@
-from fastapi import Response
-
 import base64
 import hashlib
-import json
 import secrets
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Protocol
 from uuid import uuid4
 
 from cryptography.fernet import Fernet, InvalidToken
-from fastapi import APIRouter, Cookie, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
 from .auth import _current_user
@@ -246,7 +243,7 @@ def connect_account(payload: ConnectRequest, user=Depends(_user)) -> AccountResp
     account = adapter.connect_account(user["id"], payload.account_name)
     token = _encrypt_token(str(account.pop("access_token")))
     with _database() as connection:
-        connection.execute("INSERT OR IGNORE INTO connected_accounts (user_id, platform, external_account_id, name, currency, status, access_token_encrypted, connected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (user["id"], adapter.name, account["external_account_id"], account["name"], account.get("currency", "USD"), account.get("status", "ACTIVE"), token, datetime.now(timezone.utc).isoformat()))
+        connection.execute("INSERT OR IGNORE INTO connected_accounts (user_id, platform, external_account_id, name, currency, status, access_token_encrypted, connected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (user["id"], adapter.name, account["external_account_id"], account["name"], account.get("currency", "USD"), account.get("status", "ACTIVE"), token, datetime.now(UTC).isoformat()))
         row = connection.execute("SELECT * FROM connected_accounts WHERE user_id = ? AND platform = ? AND external_account_id = ?", (user["id"], adapter.name, account["external_account_id"])).fetchone()
     return _account(row, adapter)
 

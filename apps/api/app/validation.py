@@ -1,10 +1,9 @@
 import json
 import sqlite3
-from datetime import datetime, timezone
-from typing import Literal
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from .ai import CampaignContent
 from .auth import _current_user
@@ -97,7 +96,7 @@ def validate_campaign(campaign_id: int, user=Depends(_user)) -> ValidationRespon
     generated = CampaignContent.model_validate_json(generation["content"]) if generation else None
     errors, warnings, checks = _validate_platforms(campaign, creative_types, generated)
     ready = not errors and all(check.ready for check in checks)
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at = datetime.now(UTC).isoformat()
     with _database() as connection:
         connection.execute("UPDATE campaigns SET status = ?, updated_at = ? WHERE id = ? AND user_id = ?", ("READY" if ready else "VALIDATION_FAILED", checked_at, campaign_id, user["id"]))
         connection.execute("INSERT INTO activity_logs (user_id, campaign_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?)", (user["id"], campaign_id, "CAMPAIGN_VALIDATED", "Validation passed" if ready else "Validation failed", checked_at))
@@ -119,7 +118,7 @@ def confirm_review(campaign_id: int, user=Depends(_user)) -> ValidationResponse:
     ready = not errors and all(check.ready for check in checks)
     if not ready:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Campaign must pass validation before review confirmation")
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at = datetime.now(UTC).isoformat()
     with _database() as connection:
         connection.execute("UPDATE campaigns SET status = 'READY', updated_at = ? WHERE id = ? AND user_id = ?", (checked_at, campaign_id, user["id"]))
         connection.execute("INSERT INTO activity_logs (user_id, campaign_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?)", (user["id"], campaign_id, "REVIEW_CONFIRMED", "User confirmed campaign for later publishing", checked_at))

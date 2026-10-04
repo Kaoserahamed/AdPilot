@@ -20,6 +20,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - name: Lint Python sources
+        run: pipx run ruff check .
       - run: npm run typecheck
       - run: npm run test
       # Enforces the coverage floors configured in vite.config.ts.
@@ -39,6 +41,8 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r apps/api/requirements.txt
+      - name: Lint Python sources
+        run: pipx run ruff check .
       - name: Audit Python dependencies
         run: |
           pip install pip-audit==2.7.3

@@ -12,7 +12,6 @@ from app.middleware import (
     DEFAULT_RATE_LIMIT,
     REQUEST_ID_HEADER,
     RateLimit,
-    rate_limit,
 )
 
 

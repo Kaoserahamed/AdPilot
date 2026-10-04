@@ -2,12 +2,11 @@
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Literal, Protocol
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
-
 
 from .auth import _current_user
 from .config import settings
@@ -240,7 +239,7 @@ def _campaign_context(row: sqlite3.Row) -> dict[str, object]:
 
 
 def _save(connection: sqlite3.Connection, user_id: int, campaign_id: int, provider: AIProvider, action: str, content: CampaignContent, instruction: str | None) -> GenerationResponse:
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     cursor = connection.execute("INSERT INTO ai_generations (user_id, campaign_id, provider, model, action, content, instruction, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (user_id, campaign_id, provider.name, provider.model, action, content.model_dump_json(), instruction, now))
     connection.execute("INSERT INTO activity_logs (user_id, campaign_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?)", (user_id, campaign_id, "AI_CONTENT_" + action.upper(), f"{provider.name} generated content for campaign {campaign_id}", now))
     return _row(connection.execute("SELECT * FROM ai_generations WHERE id = ?", (cursor.lastrowid,)).fetchone())

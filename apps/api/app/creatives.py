@@ -1,8 +1,7 @@
 import secrets
-
 import sqlite3
 import struct
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -158,7 +157,7 @@ async def upload_creative(file: UploadFile = File(...), user=Depends(_user)) -> 
     if creative_type == "image" and (width is None or height is None):
         storage_path.unlink(missing_ok=True)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image dimensions could not be read")
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     with _database() as connection:
         cursor = connection.execute("INSERT INTO creatives (user_id, file_name, stored_name, file_type, mime_type, file_size, width, height, duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user["id"], original_name, stored_name, creative_type, mime_type, len(data), width, height, None, now))
         row = connection.execute("SELECT * FROM creatives WHERE id = ?", (cursor.lastrowid,)).fetchone()
@@ -183,7 +182,7 @@ def attach_creative(creative_id: int, payload: AttachRequest, user=Depends(_user
         row = _owned_creative(connection, creative_id, user["id"])
         for campaign_id in set(payload.campaign_ids):
             _owned_campaign(connection, campaign_id, user["id"])
-            connection.execute("INSERT OR IGNORE INTO campaign_creatives (campaign_id, creative_id, created_at) VALUES (?, ?, ?)", (campaign_id, creative_id, datetime.now(timezone.utc).isoformat()))
+            connection.execute("INSERT OR IGNORE INTO campaign_creatives (campaign_id, creative_id, created_at) VALUES (?, ?, ?)", (campaign_id, creative_id, datetime.now(UTC).isoformat()))
     return _row(row)
 
 

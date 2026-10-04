@@ -1,6 +1,6 @@
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
@@ -134,7 +134,7 @@ def _row(row: sqlite3.Row) -> CampaignResponse:
 
 
 def _log(connection: sqlite3.Connection, user_id: int, campaign_id: int, action: str, detail: str) -> None:
-    connection.execute("INSERT INTO activity_logs (user_id, campaign_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?)", (user_id, campaign_id, action, detail, datetime.now(timezone.utc).isoformat()))
+    connection.execute("INSERT INTO activity_logs (user_id, campaign_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?)", (user_id, campaign_id, action, detail, datetime.now(UTC).isoformat()))
 
 
 @router.get("", response_model=list[CampaignResponse])
@@ -149,7 +149,7 @@ def list_campaigns(user=Depends(_user)) -> list[CampaignResponse]:
 @router.post("", response_model=CampaignResponse, status_code=status.HTTP_201_CREATED)
 def create_campaign(payload: CampaignCreate, user=Depends(_user)) -> CampaignResponse:
     init_campaign_db()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     with sqlite3.connect(settings.auth_db_path) as connection:
         cursor = connection.execute(
             """INSERT INTO campaigns (user_id, name, product, description, objective, location, audience, budget, duration_days, landing_page, tone, offer, platforms, brand_guidelines, existing_copy, competitor_notes, instructions, created_at, updated_at)
@@ -187,7 +187,7 @@ def update_campaign(campaign_id: int, payload: CampaignUpdate, user=Depends(_use
         _owned_campaign(connection, campaign_id, user["id"])
         if "platforms" in values:
             values["platforms"] = json.dumps(values["platforms"])
-        values["updated_at"] = datetime.now(timezone.utc).isoformat()
+        values["updated_at"] = datetime.now(UTC).isoformat()
         assignments = ", ".join(f"{field} = ?" for field in values)
         connection.execute(f"UPDATE campaigns SET {assignments} WHERE id = ? AND user_id = ?", (*values.values(), campaign_id, user["id"]))
         _log(connection, user["id"], campaign_id, "CAMPAIGN_UPDATED", ", ".join(values.keys()))

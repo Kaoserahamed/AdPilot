@@ -3,7 +3,7 @@ import hmac
 import os
 import secrets
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 
@@ -129,7 +129,7 @@ def register(payload: RegisterRequest, response: Response) -> UserResponse:
         try:
             cursor = connection.execute(
                 "INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-                (payload.name.strip(), payload.email, hash_password(payload.password), datetime.now(timezone.utc).isoformat()),
+                (payload.name.strip(), payload.email, hash_password(payload.password), datetime.now(UTC).isoformat()),
             )
         except sqlite3.IntegrityError as error:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account with this email already exists") from error
@@ -138,7 +138,7 @@ def register(payload: RegisterRequest, response: Response) -> UserResponse:
     with _database() as connection:
         connection.execute(
             "INSERT INTO sessions (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)",
-            (user["id"], _token_hash(token), (datetime.now(timezone.utc) + timedelta(days=settings.session_ttl_days)).isoformat(), datetime.now(timezone.utc).isoformat()),
+            (user["id"], _token_hash(token), (datetime.now(UTC) + timedelta(days=settings.session_ttl_days)).isoformat(), datetime.now(UTC).isoformat()),
         )
     _set_session_cookie(response, token)
     return UserResponse(**dict(user))
@@ -155,7 +155,7 @@ def login(payload: LoginRequest, response: Response) -> UserResponse:
     with _database() as connection:
         connection.execute(
             "INSERT INTO sessions (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)",
-            (user["id"], _token_hash(token), (datetime.now(timezone.utc) + timedelta(days=settings.session_ttl_days)).isoformat(), datetime.now(timezone.utc).isoformat()),
+            (user["id"], _token_hash(token), (datetime.now(UTC) + timedelta(days=settings.session_ttl_days)).isoformat(), datetime.now(UTC).isoformat()),
         )
     _set_session_cookie(response, token)
     return UserResponse(id=user["id"], name=user["name"], email=user["email"])
@@ -183,7 +183,7 @@ def request_password_reset(payload: PasswordResetRequest) -> dict[str, str]:
             token = secrets.token_urlsafe(48)
             connection.execute(
                 "INSERT INTO password_resets (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)",
-                (user["id"], _token_hash(token), (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat(), datetime.now(timezone.utc).isoformat()),
+                (user["id"], _token_hash(token), (datetime.now(UTC) + timedelta(minutes=30)).isoformat(), datetime.now(UTC).isoformat()),
             )
     return {"message": "If an account exists, password reset instructions have been sent."}
 
@@ -194,11 +194,11 @@ def confirm_password_reset(payload: PasswordResetConfirm) -> None:
     with _database() as connection:
         reset = connection.execute(
             "SELECT id, user_id FROM password_resets WHERE token_hash = ? AND expires_at > ? AND used_at IS NULL",
-            (_token_hash(payload.token), datetime.now(timezone.utc).isoformat()),
+            (_token_hash(payload.token), datetime.now(UTC).isoformat()),
         ).fetchone()
         if reset is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reset token is invalid or expired")
-        connection.execute("UPDATE password_resets SET used_at = ? WHERE id = ?", (datetime.now(timezone.utc).isoformat(), reset["id"]))
+        connection.execute("UPDATE password_resets SET used_at = ? WHERE id = ?", (datetime.now(UTC).isoformat(), reset["id"]))
         connection.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hash_password(payload.password), reset["user_id"]))
         connection.execute("DELETE FROM sessions WHERE user_id = ?", (reset["user_id"],))
 
@@ -212,7 +212,7 @@ def _user_for_token(token: str | None) -> sqlite3.Row | None:
             """SELECT u.id, u.name, u.email FROM sessions s
                JOIN users u ON u.id = s.user_id
                WHERE s.token_hash = ? AND s.expires_at > ?""",
-            (_token_hash(token), datetime.now(timezone.utc).isoformat()),
+            (_token_hash(token), datetime.now(UTC).isoformat()),
         ).fetchone()
 
 

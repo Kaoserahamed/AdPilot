@@ -109,7 +109,13 @@ def collect_facts(campaign_id: int, user_id: int) -> tuple[list[MetricLine], str
 
 
 def facts_document(campaign: sqlite3.Row, facts: list[MetricLine], period_start: str, period_end: str) -> dict[str, object]:
-    """The only factual source the assistant is allowed to use."""
+    """The only factual source the assistant is allowed to use.
+
+    Built for an external model provider: it is the exact payload that would be
+    sent if a provider that consumes prompts were configured. The built-in
+    provider does not need it because ``build_summary`` reads the same facts
+    directly, so the document is assembled but not consumed on that path.
+    """
 
     return {
         "campaign": {
@@ -207,7 +213,9 @@ def analyze_performance(payload: AnalyzeRequest, user=Depends(_user)) -> AnswerR
             detail="No synced metrics are available for this campaign yet. Publish it and sync metrics first.",
         )
 
-    document = facts_document(campaign_data, facts, period_start, period_end)
+    # Assembled for external providers; the built-in path builds its summary
+    # from the same facts directly, so the result is intentionally unused here.
+    _document = facts_document(campaign_data, facts, period_start, period_end)
     summary, highlights = build_summary(campaign_data, facts, period_start, period_end)
     if payload.question:
         highlights.insert(0, f"Question: {payload.question}")

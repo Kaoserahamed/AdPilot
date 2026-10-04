@@ -61,14 +61,14 @@ describe('ConnectedPlatforms', () => {
   });
 
   it('lists every advertising platform as not connected', async () => {
-    const { user } = renderPlatforms();
+    renderPlatforms();
 
     expect(await screen.findByText('Meta Ads')).toBeInTheDocument();
     expect(screen.getAllByText('Not connected').length).toBe(3);
   });
 
   it('marks a platform connected once an account is returned', async () => {
-    const { user } = renderPlatforms([account()]);
+    renderPlatforms([account()]);
 
     expect(await screen.findByText('Summer launch account')).toBeInTheDocument();
     expect(screen.getByText('act_12345 · USD')).toBeInTheDocument();

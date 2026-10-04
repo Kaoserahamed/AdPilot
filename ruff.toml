@@ -1,0 +1,36 @@
+# Ruff configuration for the Python code in this repository.
+#
+# The rule set is deliberately small: correctness checks that catch real defects
+# (unused names, redefinitions, mutable defaults) plus a light style pass. It is
+# not meant to reformat code, so enabling it never produces a noisy diff.
+target-version = "py311"
+line-length = 160
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # import sorting
+    "B",    # bugbear
+    "UP",   # pyupgrade
+]
+# Tests deliberately re-import fixtures and shadow names to exercise scoping,
+# and long SQL strings in the API modules would otherwise dominate the diff.
+ignore = [
+    "E501",   # line length is enforced by the repository scorer, not the linter
+    "B008",
+    "UP038",
+]
+
+[lint.per-file-ignores]
+# pytest fixtures are commonly re-imported to make the dependency explicit.
+"apps/api/tests/*" = ["F811"]
+"tools/tests/*" = ["F811"]
+
+[lint.isort]
+known-first-party = ["app", "tools"]
+
+[format]
+quote-style = "double"
+indent-style = "space"

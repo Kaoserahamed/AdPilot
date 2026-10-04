@@ -3,20 +3,28 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .auth import init_db, router as auth_router
-from .ai import init_ai_db, router as ai_router
-from .campaigns import init_campaign_db, router as campaigns_router
-from .creatives import init_creative_db, router as creatives_router
-from .platforms import init_platform_db, router as platforms_router
-from .validation import router as validation_router
-from .publishing import init_publishing_db, router as publishing_router, jobs_router as publishing_jobs_router
 from .activity import router as activity_router
-from .analytics import init_analytics_db, router as analytics_router
+from .ai import init_ai_db
+from .ai import router as ai_router
+from .analytics import init_analytics_db
+from .analytics import router as analytics_router
 from .analytics_ai import router as analytics_ai_router
-from .monitoring import router as monitoring_router
+from .auth import init_db
+from .auth import router as auth_router
+from .campaigns import init_campaign_db
+from .campaigns import router as campaigns_router
 from .config import settings
+from .creatives import init_creative_db
+from .creatives import router as creatives_router
 from .logging_config import configure_logging, get_logger
 from .middleware import install_middleware
+from .monitoring import router as monitoring_router
+from .platforms import init_platform_db
+from .platforms import router as platforms_router
+from .publishing import init_publishing_db
+from .publishing import jobs_router as publishing_jobs_router
+from .publishing import router as publishing_router
+from .validation import router as validation_router
 
 # Configured at import time rather than inside the lifespan hook so the first
 # records emitted during startup are already structured.

@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from tests.conftest import LogCapture
 
 from app import jobs as jobs_module
 from app.jobs import InlineQueue
 from app.logging_config import JsonFormatter, configure_logging, request_id_var
-from tests.conftest import LogCapture
 from app.main import app
 from app.middleware import REQUEST_ID_HEADER
 from app.monitoring import build_snapshot
