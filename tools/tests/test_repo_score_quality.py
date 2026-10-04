@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tools.repo_score.checks import ci, cleanliness, documentation, hygiene
+from tools.repo_score.config import MAX_LINE_LENGTH_PASS, MAX_LINE_LENGTH_WARN
 from tools.repo_score.models import Status
 from tools.repo_score.repo import RepoContext
 from tools.tests.conftest import _check, write
@@ -30,6 +31,17 @@ def test_long_lines_are_flagged(tmp_path: Path) -> None:
     write(tmp_path, "src/app.py", "x = '" + "a" * 300 + "'\n")
     assert _check(cleanliness.run(RepoContext(tmp_path)), "line_length").status in {Status.WARN, Status.FAIL}
 
+
+def test_line_length_message_reports_the_enforced_limit(tmp_path: Path) -> None:
+    # The message used to print MAX_LINE_LENGTH_PASS (120) as the limit even
+    # though the check only flags lines past MAX_LINE_LENGTH_WARN (160), so it
+    # read as a contradiction. Only the enforced number belongs in the text.
+    write(tmp_path, "src/app.py", "x = '" + "a" * 300 + "'" + "\n")
+
+    result = _check(cleanliness.run(RepoContext(tmp_path)), "line_length")
+
+    assert f"exceed {MAX_LINE_LENGTH_WARN} characters" in result.message
+    assert str(MAX_LINE_LENGTH_PASS) not in result.message
 
 def test_todo_markers_are_flagged(tmp_path: Path) -> None:
     write(tmp_path, "src/app.py", "\n".join(["# TODO something"] * 12))

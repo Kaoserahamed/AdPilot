@@ -8,7 +8,6 @@ from ..config import (
     DEBUG_OUTPUT_EXEMPT,
     MAX_DEBUG_MARKERS_FAIL,
     MAX_DEBUG_MARKERS_WARN,
-    MAX_LINE_LENGTH_PASS,
     MAX_LINE_LENGTH_WARN,
     MAX_STRIPPED_BLANK_RATIO,
 )
@@ -51,7 +50,7 @@ def run(context: RepoContext) -> list[CheckResult]:
             CheckResult(
                 name="line_length",
                 status=Status.FAIL if len(long_lines) > 10 else Status.WARN,
-                message=f"{len(long_lines)} line(s) exceed {MAX_LINE_LENGTH_WARN} characters (limit {MAX_LINE_LENGTH_PASS})",
+                message=f"{len(long_lines)} line(s) exceed {MAX_LINE_LENGTH_WARN} characters",
                 weight=1.5,
             )
         )
