@@ -117,6 +117,18 @@ Available endpoints:
 ```text
 GET    /api/v1/platforms
 GET    /api/v1/platforms/accounts
+
+## Validation and human review
+
+Validation checks required campaign fields, budget, duration, landing page, targeting, attached creative presence, platform creative compatibility, and generated platform content. The review screen shows per-platform readiness and errors/warnings. Review confirmation only transitions a campaign to `READY`; it never publishes or spends money.
+
+Available endpoints:
+
+```text
+POST /api/v1/campaigns/{id}/validate
+POST /api/v1/campaigns/{id}/review/confirm
+```
+
 POST   /api/v1/platforms/accounts/connect
 DELETE /api/v1/platforms/accounts/{account_id}
 ```

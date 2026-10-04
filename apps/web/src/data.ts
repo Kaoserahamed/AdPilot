@@ -95,6 +95,9 @@ export function toAIGeneration(value: AIGenerationApi): AIGeneration { return { 
 
 export type PlatformCapability = { platform: string; label: string; connected: boolean; supports_oauth: boolean; supports_video: boolean; supports_metrics: boolean; supports_pause: boolean; sandbox: boolean };
 export type ConnectedAccount = { id: number; platform: string; platform_label: string; external_account_id: string; name: string; currency: string; status: string; connected_at: string; sandbox: boolean };
+export type PlatformCheck = { platform: string; ready: boolean; errors: string[]; warnings: string[] };
+export type ValidationResult = { campaign_id: number; ready: boolean; errors: string[]; warnings: string[]; platform_checks: PlatformCheck[]; creative_count: number; generated_content_ready: boolean; checked_at: string };
+
 
 
 
@@ -102,6 +105,7 @@ export const navItems = [
   { label: 'Overview', icon: 'grid' },
   { label: 'Campaigns', icon: 'campaign', count: 3 },
   { label: 'AI campaign studio', icon: 'spark' },
+  { label: 'Review & validation', icon: 'check' },
 
   { label: 'Creative library', icon: 'library' },
   { label: 'Analytics', icon: 'analytics' },
