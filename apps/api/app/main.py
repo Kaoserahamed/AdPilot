@@ -11,6 +11,7 @@ from .validation import router as validation_router
 from .publishing import init_publishing_db, router as publishing_router, jobs_router as publishing_jobs_router
 from .activity import router as activity_router
 from .analytics import init_analytics_db, router as analytics_router
+from .analytics_ai import router as analytics_ai_router
 from .config import settings
 
 
@@ -51,6 +52,7 @@ app.include_router(publishing_router)
 app.include_router(publishing_jobs_router)
 app.include_router(activity_router)
 app.include_router(analytics_router)
+app.include_router(analytics_ai_router)
 
 
 @app.get("/api/health", tags=["system"])

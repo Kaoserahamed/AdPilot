@@ -82,6 +82,25 @@ Platform-reported values (`spend`, `impressions`, `reach`, `clicks`, `conversion
 
 The reporting period is snapped to the UTC day, so repeated syncs upsert the same rows instead of appending duplicate snapshots.
 
+## AI analytics assistant
+
+`POST /api/v1/ai/analyze` answers questions about campaign performance using only retrieved campaign data (PRD §8.20).
+
+```text
+POST /api/v1/ai/analyze   { "campaign_id": 1, "question": "What happened last week?" }
+```
+
+The response returns the reporting period, a summary, highlights, and the metric lines each statement is based on.
+
+The "must not invent missing metrics" rule is **enforced in code, not just requested in a prompt**:
+
+- the assistant reads only stored metric rows and their provenance;
+- every numeric figure in the response is extracted and checked against those stored values;
+- a figure that cannot be traced back to a stored metric is rejected with `502` before it reaches the user;
+- metrics no platform reported are listed under `unavailable` and set `data_complete` to `false` rather than being estimated.
+
+Dates are stripped before comparison, and non-metric identifiers (campaign id, budget) are allowlisted, so the guard targets figures rather than incidental numbers.
+
 ## Activity log
 
 Every important action is recorded (PRD §8.21).
