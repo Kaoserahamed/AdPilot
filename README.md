@@ -74,6 +74,45 @@ pip-compile --strip-extras --output-file=apps/api/requirements.lock.txt apps/api
 
 Copy `.env.example` to `.env` before starting services. No secrets are required for the deterministic local experience.
 
+
+
+### Running the tests
+
+Both suites are hermetic: they need no accounts, no API keys, and no network.
+
+```bash
+python -m pytest
+npm run test
+```
+
+The API tests write only to a temporary directory, and the web tests mock
+`fetch`. `apps/api/tests/test_isolation.py` enforces this rather than describing
+it: it fails if any test module imports an HTTP client or a provider SDK, or if
+`LIVE_EXTERNAL_APIS` is left enabled for a run. That flag is the difference
+between the sandbox adapters and calls that could spend real money.
+
+Coverage is enforced, not merely reported. `pytest.ini` requires 90% for the API;
+`apps/web/vite.config.ts` requires 90% statements, 90% lines, 75% branches, and
+65% functions for the web app. Either suite fails the build below its floor.
+
+### Where dependencies are declared
+
+This repository is an npm workspace, so the dependency manifests are:
+
+| File | Contains |
+| --- | --- |
+| `apps/web/package.json` | the only npm manifest with dependencies: React and React DOM at runtime, the rest under `devDependencies` |
+| root `package.json` | workspace scripts only; it declares no dependencies by design |
+
+The Python side is the reverse. `apps/api/requirements.txt` lists the direct
+dependencies and `requirements.lock.txt` pins every resolved package, which is
+what CI and the API image install. To inspect the installed footprint:
+
+```bash
+npm ls --workspace @adpilot/web --depth=0
+pip list
+```
+
 ## Repository layout
 
 ```text
