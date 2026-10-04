@@ -114,6 +114,36 @@ def test_sync_stores_metrics_with_provenance(analytics_client: TestClient, monke
     assert by_metric["ctr"]["value"] == 4.0
 
 
+def test_sync_emits_a_structured_record_per_platform(analytics_client: TestClient, monkeypatch: pytest.MonkeyPatch, captured_logs) -> None:
+    campaign_id = published_campaign(analytics_client)
+    monkeypatch.setattr(SandboxAdapter, "get_metrics", stub_metrics(120.5, 4000, 160, 8, 500.0))
+
+    analytics_client.post(f"/api/v1/analytics/campaigns/{campaign_id}/sync")
+
+    record = captured_logs.find("metrics_synced")
+    assert record["campaign_id"] == campaign_id
+    # Platform identifiers are stored lowercase by the adapters.
+    assert record["platform"] == "meta"
+    assert record["source"] == "sandbox"
+    # The reporting period must be logged so a stale sync is diagnosable.
+    assert record["period_end"]
+    assert record["request_id"]
+
+
+def test_sync_skips_adapters_without_metrics_support(analytics_client: TestClient, monkeypatch: pytest.MonkeyPatch, captured_logs) -> None:
+    campaign_id = published_campaign(analytics_client)
+    monkeypatch.setattr(SandboxAdapter, "supports_metrics", False)
+
+    analytics_client.post(f"/api/v1/analytics/campaigns/{campaign_id}/sync")
+
+    skipped = captured_logs.find("metrics_sync_skipped")
+    assert skipped["campaign_id"] == campaign_id
+    assert skipped["platform"] == "meta"
+    assert "metrics" in skipped["reason"]
+    # Nothing may have been stored for a skipped platform.
+    assert analytics_client.get(f"/api/v1/analytics/campaigns/{campaign_id}/metrics").json() == []
+
+
 def test_sync_requires_prior_publication(analytics_client: TestClient) -> None:
     campaign_id = analytics_client.post(
         "/api/v1/campaigns",

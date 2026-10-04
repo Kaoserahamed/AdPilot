@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from app import jobs as jobs_module
 from app.jobs import InlineQueue
 from app.logging_config import JsonFormatter, configure_logging, request_id_var
+from tests.conftest import LogCapture
 from app.main import app
 from app.middleware import REQUEST_ID_HEADER
 from app.monitoring import build_snapshot
@@ -92,33 +93,8 @@ def test_snapshot_window_is_bounded(monitoring_client: TestClient) -> None:
     body = monitoring_client.get("/api/v1/monitoring/snapshot?window_hours=0").json()
     assert body["window_hours"] >= 1
 
-class _Capture(logging.Handler):
-    """Collect formatted log lines so tests can assert on the JSON payload."""
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.formatter = JsonFormatter()
-        self.records: list[dict] = []
-
-    def emit(self, record: logging.LogRecord) -> None:
-        self.records.append(json.loads(self.formatter.format(record)))
-
-
-@pytest.fixture()
-def captured_logs() -> _Capture:
-    """Attach a capture handler to the adpilot logger tree for one test."""
-
-    capture = _Capture()
-    logger = logging.getLogger("adpilot")
-    logger.addHandler(capture)
-    previous_level = logger.level
-    logger.setLevel(logging.INFO)
-    yield capture
-    logger.removeHandler(capture)
-    logger.setLevel(previous_level)
-
-
-def test_request_emits_structured_log_with_request_id(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+def test_request_emits_structured_log_with_request_id(monitoring_client: TestClient, captured_logs: LogCapture) -> None:
     monitoring_client.get("/api/health")
 
     assert captured_logs.records, "expected the request to emit a log record"
@@ -131,7 +107,7 @@ def test_request_emits_structured_log_with_request_id(monitoring_client: TestCli
     assert isinstance(entry["duration_ms"], (int, float))
 
 
-def test_log_request_id_matches_the_response_header(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+def test_log_request_id_matches_the_response_header(monitoring_client: TestClient, captured_logs: LogCapture) -> None:
     response = monitoring_client.get("/api/ready")
 
     # The id in the log must be the same one handed back to the caller, or the
@@ -139,14 +115,14 @@ def test_log_request_id_matches_the_response_header(monitoring_client: TestClien
     assert captured_logs.records[-1]["request_id"] == response.headers[REQUEST_ID_HEADER]
 
 
-def test_log_reuses_a_client_supplied_request_id(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+def test_log_reuses_a_client_supplied_request_id(monitoring_client: TestClient, captured_logs: LogCapture) -> None:
     response = monitoring_client.get("/api/health", headers={REQUEST_ID_HEADER: "trace-abc-123"})
 
     assert captured_logs.records[-1]["request_id"] == "trace-abc-123"
     assert response.headers[REQUEST_ID_HEADER] == "trace-abc-123"
 
 
-def test_log_includes_level_and_logger_name(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+def test_log_includes_level_and_logger_name(monitoring_client: TestClient, captured_logs: LogCapture) -> None:
     monitoring_client.get("/api/health")
 
     entry = captured_logs.records[-1]
@@ -155,7 +131,7 @@ def test_log_includes_level_and_logger_name(monitoring_client: TestClient, captu
     assert entry["timestamp"].endswith("Z")
 
 
-def test_request_id_context_does_not_leak_between_requests(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+def test_request_id_context_does_not_leak_between_requests(monitoring_client: TestClient, captured_logs: LogCapture) -> None:
     monitoring_client.get("/api/health", headers={REQUEST_ID_HEADER: "first-id"})
     monitoring_client.get("/api/health")
 

@@ -21,7 +21,10 @@ from pydantic import BaseModel
 from .auth import _current_user
 from .config import settings
 from .jobs import get_queue
+from .logging_config import get_logger
 from .platforms import get_adapter
+
+logger = get_logger("publishing")
 
 router = APIRouter(prefix="/api/v1/campaigns", tags=["publishing"])
 jobs_router = APIRouter(prefix="/api/v1/publishing", tags=["publishing"])
@@ -244,6 +247,10 @@ def _publish_to_platform(
 def _fail_job(job_id: int, campaign_id: int, user_id: int, message: str) -> None:
     """Record a terminal failure without exposing internal detail."""
 
+    logger.warning(
+        "publishing_job_failed",
+        extra={"job_id": job_id, "campaign_id": campaign_id, "user_id": user_id, "reason": message[:500]},
+    )
     with _database() as connection:
         connection.execute(
             "UPDATE publishing_jobs SET status = 'FAILED', error = ?, updated_at = ? WHERE id = ?",
@@ -286,6 +293,10 @@ def _process_job(job_id: int) -> None:
             accounts = _resolve_accounts(connection, platforms, data["user_id"])
             _set_campaign_status(connection, data["id"], data["user_id"], "PUBLISHING")
             _log(connection, data["user_id"], data["id"], "CAMPAIGN_SUBMITTED", f"Publishing job {job_id} started")
+            logger.info(
+                "publishing_job_started",
+                extra={"job_id": job_id, "campaign_id": data["id"], "attempt": attempt, "platforms": platforms},
+            )
             outcomes = _publish_to_platform(data, platforms, ads_by_platform, accounts, connection)
             final = _roll_up_status(list(outcomes.values()))
             connection.execute(
@@ -294,6 +305,10 @@ def _process_job(job_id: int) -> None:
             )
             _set_campaign_status(connection, data["id"], data["user_id"], final)
             _log(connection, data["user_id"], data["id"], "CAMPAIGN_STATUS_CHANGED", f"Platform submission finished with status {final}")
+            logger.info(
+                "publishing_job_succeeded",
+                extra={"job_id": job_id, "campaign_id": data["id"], "status": final, "outcomes": outcomes},
+            )
     except PublishingError as error:
         _fail_job(job_id, data["id"], data["user_id"], str(error))
     except HTTPException as error:
@@ -326,6 +341,9 @@ def publish_campaign(campaign_id: int, user=Depends(_user)) -> PublishResponse:
         job = connection.execute("SELECT * FROM publishing_jobs WHERE id = ?", (job_id,)).fetchone()
 
     get_queue().enqueue(job_id, lambda: _process_job(job_id))
+    # Logged outside the transaction so a queue failure is visible here even
+    # though the job row is already committed.
+    logger.info("publishing_job_queued", extra={"job_id": job_id, "campaign_id": campaign_id, "user_id": user["id"]})
     return PublishResponse(campaign_id=campaign_id, status="PUBLISHING", job=_job_response(job), message="Publishing job queued. Track progress with the status endpoint.")
 
 

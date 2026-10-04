@@ -60,6 +60,38 @@ def ready_campaign(client: TestClient, platforms: list[str] | None = None) -> in
     assert client.post(f"/api/v1/campaigns/{campaign_id}/validate").json()["ready"] is True
     assert client.post(f"/api/v1/campaigns/{campaign_id}/review/confirm").status_code == 200
     return campaign_id
+
+
+def test_publish_emits_structured_job_logs(publish_client: TestClient, captured_logs) -> None:
+    campaign_id = ready_campaign(publish_client)
+    publish_client.post("/api/v1/platforms/accounts/connect", json={"platform": "Meta"})
+
+    publish_client.post(f"/api/v1/campaigns/{campaign_id}/publish")
+
+    queued = captured_logs.find("publishing_job_queued")
+    assert queued["campaign_id"] == campaign_id
+    assert queued["job_id"] > 0
+    assert queued["logger"] == "adpilot.publishing"
+    # Every record must be joinable back to the request that caused it.
+    assert queued["request_id"]
+
+    started = captured_logs.find("publishing_job_started")
+    assert started["campaign_id"] == campaign_id
+    assert started["platforms"] == ["Meta"]
+
+
+def test_publish_failure_is_logged_with_a_reason(publish_client: TestClient, captured_logs) -> None:
+    campaign_id = ready_campaign(publish_client)
+    # No connected account, so the worker fails the job.
+
+    publish_client.post(f"/api/v1/campaigns/{campaign_id}/publish")
+
+    failure = captured_logs.find("publishing_job_failed")
+    assert failure["campaign_id"] == campaign_id
+    assert failure["reason"]
+    assert failure["level"] == "WARNING"
+
+
 def test_publishing_requires_review_confirmation(publish_client: TestClient) -> None:
     campaign_id = publish_client.post("/api/v1/campaigns", json=payload()).json()["id"]
     assert publish_client.post(f"/api/v1/campaigns/{campaign_id}/publish").status_code == 409

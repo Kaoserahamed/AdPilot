@@ -20,7 +20,10 @@ from pydantic import BaseModel, Field
 from .auth import _current_user
 from .config import settings
 from .jobs import get_queue
+from .logging_config import get_logger
 from .platforms import get_adapter
+
+logger = get_logger("analytics")
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 
@@ -169,6 +172,10 @@ def sync_campaign_metrics(campaign_id: int, user_id: int) -> None:
     for row in rows:
         adapter = get_adapter(row["platform"])
         if not adapter.supports_metrics:
+            logger.debug(
+                "metrics_sync_skipped",
+                extra={"campaign_id": campaign_id, "platform": row["platform"], "reason": "adapter does not report metrics"},
+            )
             continue
         payload = adapter.get_metrics(row["external_campaign_id"])
         with _database() as connection:
@@ -199,6 +206,17 @@ def sync_campaign_metrics(campaign_id: int, user_id: int) -> None:
                 "INSERT INTO activity_logs (user_id, campaign_id, action, detail, created_at) VALUES (?, ?, 'METRICS_SYNCED', ?, ?)",
                 (user_id, campaign_id, f"Synced metrics for {row['platform']}", _now()),
             )
+        # Recorded per platform so a partial sync (one adapter without metrics
+        # support) is visible rather than looking like a full sync.
+        logger.info(
+            "metrics_synced",
+            extra={
+                "campaign_id": campaign_id,
+                "platform": row["platform"],
+                "source": source,
+                "period_end": period_end.isoformat(),
+            },
+        )
 
 
 def _breakdown(connection: sqlite3.Connection, campaign_id: int, platform: str) -> PlatformBreakdown | None:
