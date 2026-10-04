@@ -13,7 +13,7 @@ jobs:
     name: Web checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -36,7 +36,7 @@ jobs:
     name: API checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -63,7 +63,7 @@ jobs:
     name: Repository quality score
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -82,7 +82,7 @@ jobs:
     name: Container image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build API image
         run: docker build -t adpilot-api:${{ github.sha }} apps/api
       - name: Smoke test container
@@ -106,7 +106,7 @@ jobs:
     name: Fresh clone starts without credentials
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Clones the repository again and boots it in an isolated directory, so a
       # local .env or a partially built image cannot make this pass. This is the
       # claim the README makes and the first thing a buyer tries. It runs as its
@@ -118,7 +118,7 @@ jobs:
     name: One-command stack
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Proves `docker compose up` really brings the whole app up, which is the
       # claim the README makes and a buyer will try first.
       - name: Build both images
