@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.0] - 2026-10-04
+
+First tagged release, covering the MVP end to end.
+
 ### Added
 
 - AI campaign studio: generate, regenerate, and refine platform-specific Meta
@@ -44,7 +50,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   cannot lose work.
 - Worker exceptions are recorded on the job and reflected in campaign status
   instead of leaking internal detail to the caller.
-
-## [0.1.0]
-
-Initial MVP release.
+- `AI_PROVIDER=sandbox` returned 503 whenever an API key was present, because
+  only the exact value `mock` was accepted.
+- The compose file, the configuration default, and the documentation disagreed
+  about that setting's default.
