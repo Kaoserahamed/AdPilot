@@ -128,7 +128,7 @@ describe('CreateModal', () => {
   });
 
   it('keeps the modal open and shows the API error when creation fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(errorResponse('Landing page must be a valid URL.', 422)));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(errorResponse('Landing page must be a valid URL.', 422).value));
     const { onCreated, user } = renderModal();
 
     await fillRequiredFields(user);

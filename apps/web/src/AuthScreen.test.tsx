@@ -63,7 +63,7 @@ describe('AuthScreen', () => {
   });
 
   it('surfaces the API error message on a failed login', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(errorResponse('Incorrect email or password.', 401)));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(errorResponse('Incorrect email or password.', 401).value));
     const { user } = renderScreen();
 
     await user.type(screen.getByLabelText('Email address'), 'alex@example.com');
