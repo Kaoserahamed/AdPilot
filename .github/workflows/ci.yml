@@ -53,3 +53,27 @@ jobs:
         with:
           name: repo-score
           path: repo-score.json
+
+  docker:
+    name: Container image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -t adpilot-api:${{ github.sha }} .
+      - name: Smoke test container
+        run: |
+          docker run -d --name adpilot-smoke -p 8000:8000 adpilot-api:${{ github.sha }}
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/api/health > /dev/null; then
+              echo "API healthy"
+              curl -fsS http://127.0.0.1:8000/api/ready
+              docker rm -f adpilot-smoke
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not become healthy"
+          docker logs adpilot-smoke
+          docker rm -f adpilot-smoke
+          exit 1

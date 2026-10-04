@@ -37,6 +37,8 @@ apps/web       React/Vite frontend
 apps/api       FastAPI backend
 tools/repo_score  repository quality scorer
 .github        CI workflows
+Dockerfile     API container image
+compose.yaml   local container orchestration
 storage        local development uploads (ignored)
 ```
 
@@ -124,6 +126,38 @@ Cross-cutting request handling lives in `app/middleware.py` (PRD §11.1, §14):
 `/api/health` and `/api/ready` are exempt from rate limiting. Load balancers poll them frequently, and limiting them would report a false outage during a traffic spike.
 
 > **Scaling note:** the limiter is in-process state. It is correct for a single API process and needs no Redis, but it is **not** cluster-safe — running several API processes behind a load balancer multiplies the effective limit by the process count. Move the counter to shared storage before scaling out. This is the same replaceable-backend pattern used for the job queue.
+
+## Monitoring
+
+Operational visibility without new infrastructure (PRD §20, §22):
+
+```text
+GET /api/v1/monitoring/snapshot        # queue depth, job outcomes, campaign statuses, connected accounts
+GET /api/v1/monitoring/health-metrics  # unauthenticated liveness detail for a load balancer
+```
+
+`/snapshot` reports queued/running/succeeded/failed publishing jobs, campaigns grouped by status, connected account count, and recent activity volume. `/health-metrics` exposes only queue backlog and failure count, so it is safe for a load balancer to poll without credentials.
+
+`GET /api/health` and `GET /api/ready` remain the primary liveness and readiness probes.
+
+## Running with Docker
+
+```bash
+docker build -t adpilot-api .
+docker run -p 8000:8000 -v adpilot-data:/data adpilot-api
+```
+
+Or with compose:
+
+```bash
+docker compose up --build
+```
+
+The image is multi-stage: dependencies are built into a virtualenv in the builder stage and copied into a slim runtime. It runs as a non-root user, declares a `HEALTHCHECK`, and keeps uploads and the local database on a `/data` volume so they survive redeploys.
+
+Secrets are **not** baked into the image or `compose.yaml`. Supply them through the host environment or a managed secret store (`JWT_SECRET`, `AI_API_KEY`, `META_CLIENT_*`, `GOOGLE_CLIENT_*`).
+
+CI builds the image and smoke tests `/api/health` and `/api/ready` against a running container, so a broken image fails the pipeline before release.
 
 ## Repository quality scoring
 

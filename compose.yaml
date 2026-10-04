@@ -1,0 +1,30 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: adpilot-api:latest
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+      AUTH_DB_PATH: /data/adpilot.db
+      STORAGE_DIR: /data/storage
+      AI_PROVIDER: ${AI_PROVIDER:-sandbox}
+      LIVE_EXTERNAL_APIS: ${LIVE_EXTERNAL_APIS:-false}
+      # Secrets come from the host environment or a managed secret store.
+      # They are deliberately absent from this file.
+      JWT_SECRET: ${JWT_SECRET:-}
+    volumes:
+      - adpilot-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  adpilot-data:

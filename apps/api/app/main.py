@@ -14,6 +14,7 @@ from .publishing import init_publishing_db, router as publishing_router, jobs_ro
 from .activity import router as activity_router
 from .analytics import init_analytics_db, router as analytics_router
 from .analytics_ai import router as analytics_ai_router
+from .monitoring import router as monitoring_router
 from .config import settings
 from .middleware import install_middleware
 
@@ -60,6 +61,7 @@ app.include_router(publishing_jobs_router)
 app.include_router(activity_router)
 app.include_router(analytics_router)
 app.include_router(analytics_ai_router)
+app.include_router(monitoring_router)
 
 
 @app.get("/api/health", tags=["system"])
