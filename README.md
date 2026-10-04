@@ -298,7 +298,9 @@ POST /api/v1/ai/edit
 PUT  /api/v1/ai/generations/{generation_id}
 ```
 
-The default provider is `sandbox`. Set `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL` to opt into a configured provider.
+The default provider is `mock`, which runs a deterministic local generator and needs no API key. `sandbox` is accepted as an alias. To opt into a configured provider, set `AI_PROVIDER` to `openai` or `gemini` together with `AI_API_KEY` and `AI_MODEL`; an unrecognised provider name is rejected with a `503` once a key is present.
+
+Set `LOG_LEVEL` to `DEBUG`, `INFO`, `WARNING`, or `ERROR` to control log verbosity. An unrecognised value falls back to `INFO` rather than preventing startup.
 
 ## Platform adapters
 

@@ -20,7 +20,7 @@ from .middleware import install_middleware
 
 # Configured at import time rather than inside the lifespan hook so the first
 # records emitted during startup are already structured.
-configure_logging()
+configure_logging(settings.log_level)
 logger = get_logger("app")
 
 

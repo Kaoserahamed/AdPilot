@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from app import jobs as jobs_module
 from app.jobs import InlineQueue
-from app.logging_config import JsonFormatter, request_id_var
+from app.logging_config import JsonFormatter, configure_logging, request_id_var
 from app.main import app
 from app.middleware import REQUEST_ID_HEADER
 from app.monitoring import build_snapshot
@@ -189,6 +189,40 @@ def test_json_formatter_serialises_exception_details() -> None:
 
     assert payload["level"] == "ERROR"
     assert "boom" in payload["exception"]
+
+
+@pytest.fixture()
+def restore_root_logger():
+    """Restore the root logger so level changes cannot leak between tests."""
+
+    root = logging.getLogger()
+    handlers = list(root.handlers)
+    level = root.level
+    yield
+    for handler in list(root.handlers):
+        if handler not in handlers:
+            root.removeHandler(handler)
+    root.setLevel(level)
+
+
+@pytest.mark.parametrize("level,expected", [("DEBUG", logging.DEBUG), ("warning", logging.WARNING), ("ERROR", logging.ERROR)])
+def test_configure_logging_honours_the_level(level: str, expected: int, restore_root_logger) -> None:
+    configure_logging(level)
+    assert logging.getLogger().level == expected
+
+
+def test_configure_logging_falls_back_for_an_unrecognised_level(restore_root_logger) -> None:
+    # A typo in LOG_LEVEL must not prevent the service from starting.
+    configure_logging("LOUD")
+    assert logging.getLogger().level == logging.INFO
+
+
+def test_configure_logging_does_not_duplicate_handlers(restore_root_logger) -> None:
+    configure_logging("INFO")
+    first = len(logging.getLogger().handlers)
+    configure_logging("INFO")
+
+    assert len(logging.getLogger().handlers) == first
 
 def test_build_snapshot_without_request_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("app.auth.settings.auth_db_path", str(tmp_path / "direct.db"))

@@ -16,7 +16,11 @@ class Settings(BaseSettings):
     ai_model: str = "gpt-4o-mini"
 
     ai_api_key: str = ""
+    # Accepts "mock" (or its alias "sandbox") for the deterministic provider,
+    # or "openai" / "gemini". Anything else is rejected once a key is set.
     ai_provider: str = "mock"
+    # Log verbosity for the JSON formatter: DEBUG, INFO, WARNING, or ERROR.
+    log_level: str = "INFO"
     live_external_apis: bool = False
     meta_client_id: str = ""
     meta_client_secret: str = ""

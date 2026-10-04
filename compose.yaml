@@ -11,7 +11,8 @@ services:
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
       AUTH_DB_PATH: /data/adpilot.db
       STORAGE_DIR: /data/storage
-      AI_PROVIDER: ${AI_PROVIDER:-sandbox}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LIVE_EXTERNAL_APIS: ${LIVE_EXTERNAL_APIS:-false}
       # Secrets come from the host environment or a managed secret store.
       # They are deliberately absent from this file.

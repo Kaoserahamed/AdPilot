@@ -69,7 +69,9 @@ def configure_logging(level: str = "INFO") -> None:
     """Install the JSON formatter on the root logger.
 
     Existing handlers are replaced so repeated calls (for example on reload)
-    cannot end up duplicating every line.
+    cannot end up duplicating every line. An unrecognised level falls back to
+    INFO rather than raising, because a typo in the environment must not stop
+    the service from starting.
     """
 
     handler = logging.StreamHandler(sys.stdout)
@@ -79,7 +81,10 @@ def configure_logging(level: str = "INFO") -> None:
     for existing in list(root.handlers):
         root.removeHandler(existing)
     root.addHandler(handler)
-    root.setLevel(level.upper())
+
+    resolved = (level or "").strip().upper()
+    known = {name for name in logging.getLevelNamesMapping()} | {name.upper() for name in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")}
+    root.setLevel(resolved if resolved in known else logging.INFO)
 
 
 def bind_request_id(request_id: str) -> Any:
