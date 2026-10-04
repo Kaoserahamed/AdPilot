@@ -68,7 +68,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build API image
-        run: docker build -t adpilot-api:${{ github.sha }} .
+        run: docker build -t adpilot-api:${{ github.sha }} apps/api
       - name: Smoke test container
         run: |
           docker run -d --name adpilot-smoke -p 8000:8000 adpilot-api:${{ github.sha }}
@@ -84,4 +84,31 @@ jobs:
           echo "API did not become healthy"
           docker logs adpilot-smoke
           docker rm -f adpilot-smoke
+          exit 1
+
+  stack:
+    name: One-command stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build both images
+        run: docker compose build
+      # Proves `docker compose up` really brings the whole app up, which is the
+      # claim the README makes and a buyer will try first.
+      - name: Start the stack
+        run: docker compose up -d
+      - name: Smoke test the full stack
+        run: |
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:5173/ > /dev/null \
+               && curl -fsS http://127.0.0.1:5173/api/health > /dev/null; then
+              echo "Web served and API reachable through the proxy"
+              docker compose down -v
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Stack did not become ready"
+          docker compose logs
+          docker compose down -v
           exit 1

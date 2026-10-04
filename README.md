@@ -10,6 +10,27 @@ AdPilot is an AI-assisted multi-platform advertising workspace. Give the product
 - Jobs: Redis + Celery architecture (worker service is introduced with publishing)
 - Integrations: sandbox-first adapters; live Meta and Google clients are opt-in through environment variables
 
+## Run the whole app with one command
+
+Docker Compose starts the API, the built web app, and the storage volume
+together. No local Node or Python install is required.
+
+```bash
+docker compose up --build
+```
+
+The workspace is then at `http://localhost:5173`. Requests to `/api` are
+reverse-proxied to the API service by nginx, so the browser talks to a single
+origin and the session cookie needs no CORS handling. The API is also published
+directly on `http://localhost:8000` for debugging.
+
+`compose.yaml` waits for the API health check before starting the web container,
+so a half-ready stack is not something you have to wait on manually. Data
+persists in the `adpilot-data` volume; add `--volumes` to `docker compose down`
+to discard it.
+
+To run the services directly on your machine instead, use the steps below.
+
 ## Development
 
 Requirements: Node.js 20+, Python 3.11+.
@@ -37,8 +58,10 @@ apps/web       React/Vite frontend
 apps/api       FastAPI backend
 tools/repo_score  repository quality scorer
 .github        CI workflows
-Dockerfile     API container image
-compose.yaml   local container orchestration
+deploy         nginx config used by the web image
+Dockerfile     web image (Vite build + nginx)
+apps/api/Dockerfile  API container image
+compose.yaml   brings the whole stack up with one command
 storage        local development uploads (ignored)
 ```
 

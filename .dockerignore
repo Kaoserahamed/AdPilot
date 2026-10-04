@@ -12,8 +12,7 @@ node_modules
 storage
 coverage
 tools
-tests
-apps/web
+apps/api
 PRD.md
 repo-score.json
 .env
