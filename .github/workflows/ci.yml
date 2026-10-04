@@ -52,7 +52,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r apps/api/requirements.txt
-      - run: python -m tools.repo_score --fail-under 60
+      - run: python -m tools.repo_score --fail-under 80
       - name: Save score report
         if: always()
         run: python -m tools.repo_score --json > repo-score.json
