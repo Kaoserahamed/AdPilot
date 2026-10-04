@@ -100,15 +100,27 @@ jobs:
           docker rm -f adpilot-smoke
           exit 1
 
+  fresh_clone:
+    name: Fresh clone starts without credentials
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Clones the repository again and boots it in an isolated directory, so a
+      # local .env or a partially built image cannot make this pass. This is the
+      # claim the README makes and the first thing a buyer tries. It runs as its
+      # own job because it binds the same host ports as the stack job.
+      - name: Verify a fresh clone starts with no credentials
+        run: ./scripts/fresh_clone_check.sh
+
   stack:
     name: One-command stack
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build both images
-        run: docker compose build
       # Proves `docker compose up` really brings the whole app up, which is the
       # claim the README makes and a buyer will try first.
+      - name: Build both images
+        run: docker compose build
       - name: Start the stack
         run: docker compose up -d
       - name: Smoke test the full stack

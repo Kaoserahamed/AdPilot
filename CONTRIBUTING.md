@@ -61,7 +61,12 @@ python -m pytest apps/api/tests/test_monitoring.py -q
 | `npm audit --omit=dev --audit-level=high` | Vulnerabilities in shipped dependencies |
 | `python -m pytest` | Backend suites |
 | `pip-audit --requirement apps/api/requirements.txt --strict` | Vulnerabilities in Python dependencies |
-| `python -m tools.repo_score --fail-under 60` | Repository quality gate |
+| `python -m tools.repo_score --fail-under 80` | Repository quality gate |
+| `./scripts/fresh_clone_check.sh` | Clones, builds, and boots the stack with no credentials |
+
+Coverage is gated separately: the backend floor is set in `pytest.ini`
+(`--cov-fail-under=90`) and the frontend floors in `apps/web/vite.config.ts`.
+Run `npm run test:coverage` locally to see where the web app stands.
 
 ## Repository quality score
 

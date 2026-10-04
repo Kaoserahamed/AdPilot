@@ -31,6 +31,21 @@ to discard it.
 
 To run the services directly on your machine instead, use the steps below.
 
+### Verifying a fresh clone
+
+`scripts/fresh_clone_check.sh` clones the repository into a scratch directory,
+builds both images, starts the stack, and asserts `/api/health`, `/api/ready`,
+and the nginx-proxied health endpoint all respond. It fails if a `.env` file is
+present, which keeps the "no credentials required" claim honest.
+
+```bash
+./scripts/fresh_clone_check.sh
+```
+
+It runs in CI on every pull request, so the one-command startup is verified
+rather than merely documented. Pass a repository URL as the first argument to
+check a specific remote.
+
 ## Development
 
 Requirements: Node.js 20+, Python 3.11+.
