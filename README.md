@@ -66,6 +66,22 @@ Job rows are committed before the queue is touched, so a queue failure cannot lo
 
 A Celery + Redis backend only needs to implement `JobQueue` and be installed with `set_queue`.
 
+## Unified analytics
+
+Metrics are collected from platform adapters through the same replaceable queue as publishing, and stored with full provenance: platform, campaign, metric, value, currency, reporting period, and source (PRD §8.18).
+
+```text
+GET  /api/v1/analytics/overview
+GET  /api/v1/analytics/platforms
+GET  /api/v1/analytics/campaigns/{id}
+GET  /api/v1/analytics/campaigns/{id}/metrics
+POST /api/v1/analytics/campaigns/{id}/sync
+```
+
+Platform-reported values (`spend`, `impressions`, `reach`, `clicks`, `conversions`, `revenue`) keep the source the adapter returned. AdPilot-derived values (`ctr`, `cpc`, `cpa`, `roas`) are stored separately and marked `calculated` with source `adpilot`, so the dashboard can always distinguish reported numbers from computed ones (PRD §8.19). A ratio without a denominator is reported as `null` rather than zero, which would imply a real measurement.
+
+The reporting period is snapped to the UTC day, so repeated syncs upsert the same rows instead of appending duplicate snapshots.
+
 ## Activity log
 
 Every important action is recorded (PRD §8.21).
