@@ -10,7 +10,9 @@
     "typecheck": "npm run typecheck --workspace @adpilot/web",
     "test": "npm run test --workspace @adpilot/web",
     "api:dev": "python -m uvicorn app.main:app --app-dir apps/api --reload --port 8000",
-    "api:test": "python -m pytest apps/api/tests"
+    "api:test": "python -m pytest apps/api/tests tests",
+    "score": "python -m tools.repo_score",
+    "score:ci": "python -m tools.repo_score --json --fail-under 60"
   },
   "engines": { "node": ">=20" }
 }

@@ -13,6 +13,7 @@ __pycache__/
 !.env.example
 .DS_Store
 coverage/
+repo-score.json
 playwright-report/
 test-results/
 .idea/

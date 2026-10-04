@@ -33,4 +33,23 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r apps/api/requirements.txt
-      - run: python -m pytest apps/api/tests
+      - run: python -m pytest
+
+  quality:
+    name: Repository quality score
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r apps/api/requirements.txt
+      - run: python -m tools.repo_score --fail-under 60
+      - name: Save score report
+        if: always()
+        run: python -m tools.repo_score --json > repo-score.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: repo-score
+          path: repo-score.json

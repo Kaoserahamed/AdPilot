@@ -35,9 +35,41 @@ Copy `.env.example` to `.env` before starting services. No secrets are required 
 ```text
 apps/web       React/Vite frontend
 apps/api       FastAPI backend
+tools/repo_score  repository quality scorer
 .github        CI workflows
 storage        local development uploads (ignored)
 ```
+
+## Repository quality scoring
+
+`tools/repo_score` measures this repository across weighted categories and reports a composite grade. It is read-only: it inspects the checkout and never rewrites code.
+
+```bash
+python -m tools.repo_score              # human-readable report
+python -m tools.repo_score --verbose    # include passing checks
+python -m tools.repo_score --json       # machine-readable report
+python -m tools.repo_score --strict     # exit 1 if any check fails
+npm run score
+```
+
+| Category | Weight | Signals |
+| --- | --- | --- |
+| Testing | 25% | test presence, test-to-source ratio, runner config, case count, source coverage |
+| Architecture | 20% | module size, function size, import cycles, top-level module count |
+| Code cleanliness | 20% | line length, TODO/FIXME markers, stray debug output, whitespace |
+| Documentation | 15% | README substance, `.env.example`, docstring ratio, Markdown count |
+| CI/CD | 10% | workflow presence, lint/typecheck/test/build stages, PR trigger, containerization |
+| Repository hygiene | 10% | ignore rules, `.editorconfig`, secret detection, commit convention, clean worktree |
+
+Each check reports `PASS`, `WARN`, `FAIL`, or `SKIP`. Checks are weighted within a category and categories are weighted into the composite, which maps to a letter grade (`A` >= 90, `B` >= 80, `C` >= 70, `D` >= 60, else `F`).
+
+Every weight and threshold lives in `tools/repo_score/config.py`; `validate_config()` enforces that category weights sum to `1.0`. Adjust the model there without touching check logic.
+
+CI runs the scorer as a quality gate (`--fail-under 60`) and uploads the JSON report as an artifact.
+
+### A note on the rubric
+
+This rubric is an original construction from commonly used repository-health signals. It is not a reproduction of any third party's proprietary criteria. Company-internal curation rubrics used for AI training data are generally unpublished, so if you have a specific external rubric in mind, encode it in `config.py` and the scoring engine will use it unchanged.
 
 ## Product implementation sequence
 

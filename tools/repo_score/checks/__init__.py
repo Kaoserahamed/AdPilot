@@ -1,0 +1,1 @@
+"""Checks grouped by scoring category."""
