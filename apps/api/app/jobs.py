@@ -19,12 +19,13 @@ failure never loses the unit of work.
 
 from __future__ import annotations
 
-import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
+
+from .logging_config import get_logger
 from typing import Callable, Protocol
 
-logger = logging.getLogger("adpilot.jobs")
+logger = get_logger("jobs")
 
 JobCallable = Callable[[], None]
 
@@ -49,7 +50,7 @@ class ThreadQueue:
         try:
             func()
         except Exception:  # noqa: BLE001 - a worker must never die silently
-            logger.exception("Background job %s failed", job_id)
+            logger.exception("background_job_failed", extra={"job_id": job_id})
 
 
 class InlineQueue:
@@ -59,7 +60,7 @@ class InlineQueue:
         try:
             func()
         except Exception:  # noqa: BLE001 - surfaced through job state, not the queue
-            logger.exception("Inline job %s failed", job_id)
+            logger.exception("inline_job_failed", extra={"job_id": job_id})
 
 
 class RecordingQueue:

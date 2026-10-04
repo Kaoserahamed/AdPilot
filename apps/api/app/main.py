@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,13 +15,18 @@ from .analytics import init_analytics_db, router as analytics_router
 from .analytics_ai import router as analytics_ai_router
 from .monitoring import router as monitoring_router
 from .config import settings
+from .logging_config import configure_logging, get_logger
 from .middleware import install_middleware
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+# Configured at import time rather than inside the lifespan hook so the first
+# records emitted during startup are already structured.
+configure_logging()
+logger = get_logger("app")
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    logger.info("startup", extra={"environment": settings.app_env, "ai_provider": settings.ai_provider})
     init_db()
     init_campaign_db()
     init_creative_db()
@@ -31,6 +35,7 @@ async def lifespan(_: FastAPI):
     init_publishing_db()
     init_analytics_db()
     yield
+    logger.info("shutdown")
 
 
 app = FastAPI(

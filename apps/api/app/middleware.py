@@ -10,7 +10,6 @@ its limits. A multi-process deployment must move this to shared storage, which
 is noted in the README rather than implied to be cluster-safe.
 """
 
-import logging
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -19,6 +18,8 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from .logging_config import bind_request_id, get_logger, request_id_var
 
 REQUEST_ID_HEADER = "X-Request-ID"
 
@@ -36,7 +37,7 @@ DEFAULT_RATE_LIMIT = 120
 AUTH_RATE_LIMIT = 20
 RATE_WINDOW_SECONDS = 60
 
-logger = logging.getLogger("adpilot.request")
+logger = get_logger("request")
 
 
 @dataclass
@@ -91,28 +92,35 @@ def _error_payload(request: Request, code: str, message: str) -> dict[str, objec
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
-    """Assign a request id, emit an access log line, and add security headers."""
+    """Assign a request id, emit a structured access log, and add security headers."""
 
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get(REQUEST_ID_HEADER) or uuid4().hex
         request.state.request_id = request_id
+        # Bind for the whole request so any handler that logs without passing an
+        # explicit request_id still has it attached by the formatter.
+        token = bind_request_id(request_id)
         started = time.perf_counter()
         try:
             response = await call_next(request)
         except Exception:
-            logger.exception("Unhandled error", extra={"request_id": request_id, "path": request.url.path})
+            logger.exception("unhandled_error", extra={"path": request.url.path, "method": request.method})
             response = JSONResponse(status_code=500, content=_error_payload(request, "internal_error", "Something went wrong. Please try again."))
+        finally:
+            request_id_var.reset(token)
         elapsed_ms = (time.perf_counter() - started) * 1000
         response.headers[REQUEST_ID_HEADER] = request_id
         for header, value in SECURITY_HEADERS.items():
             response.headers.setdefault(header, value)
         logger.info(
-            "%s %s -> %s in %.1fms",
-            request.method,
-            request.url.path,
-            response.status_code,
-            elapsed_ms,
-            extra={"request_id": request_id},
+            "request_completed",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": round(elapsed_ms, 2),
+            },
         )
         return response
 
@@ -126,7 +134,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         key = _client_key(request)
         limit = AUTH_RATE_LIMIT if _is_auth_route(request.url.path) else DEFAULT_RATE_LIMIT
         if not rate_limit.check(key, limit):
-            logger.warning("Rate limit exceeded", extra={"path": request.url.path, "client": key})
+            logger.warning("rate_limited", extra={"path": request.url.path, "client": key, "limit": limit})
             return JSONResponse(
                 status_code=429,
                 content=_error_payload(request, "rate_limited", "Too many requests. Please slow down and try again shortly."),

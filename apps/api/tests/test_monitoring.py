@@ -1,5 +1,7 @@
-"""Monitoring endpoint tests (PRD §20, §22)."""
+"""Monitoring endpoint and structured logging tests (PRD §20, §22)."""
 
+import json
+import logging
 from pathlib import Path
 
 import pytest
@@ -7,7 +9,9 @@ from fastapi.testclient import TestClient
 
 from app import jobs as jobs_module
 from app.jobs import InlineQueue
+from app.logging_config import JsonFormatter, request_id_var
 from app.main import app
+from app.middleware import REQUEST_ID_HEADER
 from app.monitoring import build_snapshot
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00" + b"\x1f\x15\xc4\x89" + b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4" + b"\x00\x00\x00\x00IEND\xaeB`\x82"
@@ -88,6 +92,103 @@ def test_snapshot_window_is_bounded(monitoring_client: TestClient) -> None:
     body = monitoring_client.get("/api/v1/monitoring/snapshot?window_hours=0").json()
     assert body["window_hours"] >= 1
 
+class _Capture(logging.Handler):
+    """Collect formatted log lines so tests can assert on the JSON payload."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.formatter = JsonFormatter()
+        self.records: list[dict] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.records.append(json.loads(self.formatter.format(record)))
+
+
+@pytest.fixture()
+def captured_logs() -> _Capture:
+    """Attach a capture handler to the adpilot logger tree for one test."""
+
+    capture = _Capture()
+    logger = logging.getLogger("adpilot")
+    logger.addHandler(capture)
+    previous_level = logger.level
+    logger.setLevel(logging.INFO)
+    yield capture
+    logger.removeHandler(capture)
+    logger.setLevel(previous_level)
+
+
+def test_request_emits_structured_log_with_request_id(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+    monitoring_client.get("/api/health")
+
+    assert captured_logs.records, "expected the request to emit a log record"
+    entry = captured_logs.records[-1]
+    assert entry["message"] == "request_completed"
+    assert entry["request_id"]
+    assert entry["method"] == "GET"
+    assert entry["path"] == "/api/health"
+    assert entry["status_code"] == 200
+    assert isinstance(entry["duration_ms"], (int, float))
+
+
+def test_log_request_id_matches_the_response_header(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+    response = monitoring_client.get("/api/ready")
+
+    # The id in the log must be the same one handed back to the caller, or the
+    # two cannot be joined when debugging a report.
+    assert captured_logs.records[-1]["request_id"] == response.headers[REQUEST_ID_HEADER]
+
+
+def test_log_reuses_a_client_supplied_request_id(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+    response = monitoring_client.get("/api/health", headers={REQUEST_ID_HEADER: "trace-abc-123"})
+
+    assert captured_logs.records[-1]["request_id"] == "trace-abc-123"
+    assert response.headers[REQUEST_ID_HEADER] == "trace-abc-123"
+
+
+def test_log_includes_level_and_logger_name(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+    monitoring_client.get("/api/health")
+
+    entry = captured_logs.records[-1]
+    assert entry["level"] == "INFO"
+    assert entry["logger"] == "adpilot.request"
+    assert entry["timestamp"].endswith("Z")
+
+
+def test_request_id_context_does_not_leak_between_requests(monitoring_client: TestClient, captured_logs: _Capture) -> None:
+    monitoring_client.get("/api/health", headers={REQUEST_ID_HEADER: "first-id"})
+    monitoring_client.get("/api/health")
+
+    ids = [record["request_id"] for record in captured_logs.records if record["message"] == "request_completed"]
+    assert ids[-2] == "first-id"
+    assert ids[-1] != "first-id"
+
+
+def test_json_formatter_includes_ambient_request_id() -> None:
+    """A log emitted outside the request middleware still carries a request_id field."""
+
+    record = logging.LogRecord("adpilot.worker", logging.INFO, __file__, 1, "worker_tick", None, None)
+    token = request_id_var.set("ambient-id")
+    try:
+        payload = json.loads(JsonFormatter().format(record))
+    finally:
+        request_id_var.reset(token)
+
+    assert payload["request_id"] == "ambient-id"
+    assert payload["message"] == "worker_tick"
+
+
+def test_json_formatter_serialises_exception_details() -> None:
+    try:
+        raise ValueError("boom")
+    except ValueError:
+        record = logging.LogRecord("adpilot.worker", logging.ERROR, __file__, 1, "failed", None, None)
+        record.exc_info = __import__("sys").exc_info()
+
+    payload = json.loads(JsonFormatter().format(record))
+
+    assert payload["level"] == "ERROR"
+    assert "boom" in payload["exception"]
 
 def test_build_snapshot_without_request_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("app.auth.settings.auth_db_path", str(tmp_path / "direct.db"))
