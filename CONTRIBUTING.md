@@ -19,7 +19,7 @@ Python 3.11+:
 npm install
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r apps/api/requirements.txt
+pip install -r apps/api/requirements.lock.txt
 cp .env.example .env
 ```
 

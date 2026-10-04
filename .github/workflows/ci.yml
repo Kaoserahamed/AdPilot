@@ -40,13 +40,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r apps/api/requirements.txt
+      # The lock file pins every transitive dependency, so CI installs the same
+      # versions locally and in the image.
+      - run: pip install -r apps/api/requirements.lock.txt
       - name: Lint Python sources
         run: pipx run ruff check .
       - name: Audit Python dependencies
         run: |
           pip install pip-audit==2.7.3
-          pip-audit --requirement apps/api/requirements.txt --strict
+          pip-audit --requirement apps/api/requirements.lock.txt --strict
       - run: python -m pytest
       # pytest.ini sets --cov=app --cov-fail-under=90, so this step is the gate.
       - name: Upload API coverage report

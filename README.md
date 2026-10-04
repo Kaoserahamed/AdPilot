@@ -60,8 +60,16 @@ The web app runs at `http://localhost:5173`. The API foundation is available wit
 ```bash
 python -m venv .venv
 .venv\\Scripts\\Activate.ps1
-pip install -r apps/api/requirements.txt
+pip install -r apps/api/requirements.lock.txt
 uvicorn app.main:app --app-dir apps/api --reload --port 8000
+```
+
+`apps/api/requirements.txt` lists the direct dependencies; `requirements.lock.txt`
+pins every transitive one and is what CI and the container image install.
+Regenerate the lock after changing `requirements.txt`:
+
+```bash
+pip-compile --strip-extras --output-file=apps/api/requirements.lock.txt apps/api/requirements.txt
 ```
 
 Copy `.env.example` to `.env` before starting services. No secrets are required for the deterministic local experience.

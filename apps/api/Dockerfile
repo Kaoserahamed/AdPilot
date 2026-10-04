@@ -6,7 +6,7 @@ ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /build
-COPY requirements.txt ./requirements.txt
+COPY requirements.lock.txt ./requirements.txt
 RUN python -m venv /opt/venv && /opt/venv/bin/pip install -r requirements.txt
 
 
