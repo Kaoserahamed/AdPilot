@@ -23,6 +23,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build
+      # --omit=dev keeps the gate on what actually ships; dev-tooling advisories
+      # are tracked by dependabot instead of blocking every pull request.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
   api:
     name: API checks
@@ -33,6 +37,10 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r apps/api/requirements.txt
+      - name: Audit Python dependencies
+        run: |
+          pip install pip-audit==2.7.3
+          pip-audit --requirement apps/api/requirements.txt --strict
       - run: python -m pytest
 
   quality:

@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Group the test tooling so a vitest/jsdom bump does not arrive as a
+    # separate pull request from every other devDependency.
+    groups:
+      vitest-tooling:
+        patterns:
+          - vitest
+          - '@vitest/*'
+          - jsdom
+          - '@testing-library/*'
+      typescript-tooling:
+        patterns:
+          - typescript
+          - vite
+          - '@vitejs/*'
+
+  - package-ecosystem: pip
+    directory: /apps/api
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      fastapi-stack:
+        patterns:
+          - fastapi
+          - starlette
+          - uvicorn
+          - pydantic
+          - pydantic-settings
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
