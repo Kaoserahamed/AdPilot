@@ -22,6 +22,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
+      # Enforces the coverage floors configured in vite.config.ts.
+      - run: npm run test:coverage
       - run: npm run build
       # --omit=dev keeps the gate on what actually ships; dev-tooling advisories
       # are tracked by dependabot instead of blocking every pull request.
@@ -42,6 +44,14 @@ jobs:
           pip install pip-audit==2.7.3
           pip-audit --requirement apps/api/requirements.txt --strict
       - run: python -m pytest
+      # pytest.ini sets --cov=app --cov-fail-under=90, so this step is the gate.
+      - name: Upload API coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: coverage.xml
+          if-no-files-found: ignore
 
   quality:
     name: Repository quality score
