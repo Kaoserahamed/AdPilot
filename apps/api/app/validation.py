@@ -8,6 +8,8 @@ from pydantic import BaseModel
 from .ai import CampaignContent
 from .auth import _current_user
 from .config import settings
+from .db import get_connection as _database
+from .db import owned_campaign as _owned_campaign
 
 router = APIRouter(prefix="/api/v1/campaigns", tags=["validation"])
 
@@ -30,22 +32,8 @@ class ValidationResponse(BaseModel):
     checked_at: str
 
 
-def _database() -> sqlite3.Connection:
-    connection = sqlite3.connect(settings.auth_db_path)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
-
-
 def _user(session_token: str | None = Cookie(default=None, alias=settings.session_cookie_name)):
     return _current_user(session_token)
-
-
-def _owned_campaign(connection: sqlite3.Connection, campaign_id: int, user_id: int) -> sqlite3.Row:
-    row = connection.execute("SELECT * FROM campaigns WHERE id = ? AND user_id = ?", (campaign_id, user_id)).fetchone()
-    if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
-    return row
 
 
 def _creative_types(connection: sqlite3.Connection, campaign_id: int) -> list[str]:

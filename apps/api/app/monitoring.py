@@ -5,7 +5,6 @@ whether publishing is healthy without attaching a debugger. Values come from the
 database and the in-process queue, so no new infrastructure is required.
 """
 
-import sqlite3
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends
@@ -13,6 +12,7 @@ from pydantic import BaseModel
 
 from .auth import _current_user
 from .config import settings
+from .db import get_connection as _database
 
 router = APIRouter(prefix="/api/v1/monitoring", tags=["monitoring"])
 
@@ -34,13 +34,6 @@ class MonitoringSnapshot(BaseModel):
     ai_provider: str
     integrations: str
     environment: str
-
-
-def _database() -> sqlite3.Connection:
-    connection = sqlite3.connect(settings.auth_db_path)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
 
 
 def _user(session_token: str | None = Cookie(default=None, alias=settings.session_cookie_name)):

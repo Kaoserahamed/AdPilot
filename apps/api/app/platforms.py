@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from .auth import _current_user
 from .config import settings
+from .db import get_connection as _database
 
 router = APIRouter(prefix="/api/v1/platforms", tags=["platforms"])
 accounts_router = APIRouter(prefix="/api/v1/accounts", tags=["accounts"])
@@ -162,13 +163,6 @@ def _decrypt_token(value: str) -> str:
         return _fernet().decrypt(value.encode()).decode()
     except InvalidToken as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Stored platform credential cannot be decrypted") from error
-
-
-def _database() -> sqlite3.Connection:
-    connection = sqlite3.connect(settings.auth_db_path)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
 
 
 def init_platform_db() -> None:

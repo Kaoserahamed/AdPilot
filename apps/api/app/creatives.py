@@ -11,6 +11,8 @@ from pydantic import BaseModel, Field
 
 from .auth import _current_user
 from .config import settings
+from .db import get_connection as _database
+from .db import owned_campaign as _owned_campaign
 
 router = APIRouter(prefix="/api/v1/creatives", tags=["creatives"])
 CreativeType = Literal["image", "video", "logo"]
@@ -41,13 +43,6 @@ class CreativeResponse(BaseModel):
 
 class AttachRequest(BaseModel):
     campaign_ids: Annotated[list[int], Field(min_length=1, max_length=50)]
-
-
-def _database() -> sqlite3.Connection:
-    connection = sqlite3.connect(settings.auth_db_path)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
 
 
 def init_creative_db() -> None:
@@ -109,13 +104,6 @@ def _owned_creative(connection: sqlite3.Connection, creative_id: int, user_id: i
     row = connection.execute("SELECT * FROM creatives WHERE id = ? AND user_id = ?", (creative_id, user_id)).fetchone()
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Creative not found")
-    return row
-
-
-def _owned_campaign(connection: sqlite3.Connection, campaign_id: int, user_id: int) -> sqlite3.Row:
-    row = connection.execute("SELECT id FROM campaigns WHERE id = ? AND user_id = ?", (campaign_id, user_id)).fetchone()
-    if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
     return row
 
 

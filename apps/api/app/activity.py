@@ -4,13 +4,13 @@ Every important action writes to ``activity_logs``. This module exposes the log
 so users and support can audit what happened and when.
 """
 
-import sqlite3
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from .auth import _current_user
 from .config import settings
+from .db import get_connection as _database
 
 router = APIRouter(prefix="/api/v1/activity", tags=["activity"])
 
@@ -24,13 +24,6 @@ class ActivityEntry(BaseModel):
     action: str
     detail: str | None
     created_at: str
-
-
-def _database() -> sqlite3.Connection:
-    connection = sqlite3.connect(settings.auth_db_path)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
 
 
 def _user(session_token: str | None = Cookie(default=None, alias=settings.session_cookie_name)):

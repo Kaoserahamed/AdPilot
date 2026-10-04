@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .auth import _current_user
 from .config import settings
+from .db import owned_campaign as _owned_campaign
 
 router = APIRouter(prefix="/api/v1/campaigns", tags=["campaigns"])
 
@@ -160,14 +161,6 @@ def create_campaign(payload: CampaignCreate, user=Depends(_user)) -> CampaignRes
         connection.row_factory = sqlite3.Row
         row = connection.execute("SELECT * FROM campaigns WHERE id = ?", (cursor.lastrowid,)).fetchone()
     return _row(row)
-
-
-def _owned_campaign(connection: sqlite3.Connection, campaign_id: int, user_id: int) -> sqlite3.Row:
-    connection.row_factory = sqlite3.Row
-    row = connection.execute("SELECT * FROM campaigns WHERE id = ? AND user_id = ?", (campaign_id, user_id)).fetchone()
-    if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
-    return row
 
 
 @router.get("/{campaign_id}", response_model=CampaignResponse)

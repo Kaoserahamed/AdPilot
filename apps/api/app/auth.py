@@ -4,13 +4,13 @@ import os
 import secrets
 import sqlite3
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Cookie, HTTPException, Response, status
 from pydantic import BaseModel, Field, field_validator
 
 from .config import settings
+from .db import get_connection as _database
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
 
@@ -47,15 +47,6 @@ class UserResponse(BaseModel):
     id: int
     name: str
     email: str
-
-
-def _database() -> sqlite3.Connection:
-    path = Path(settings.auth_db_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(path)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
 
 
 def init_db() -> None:
