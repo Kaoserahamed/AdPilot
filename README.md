@@ -111,6 +111,20 @@ GET /api/v1/activity?campaign_id={id}&limit={n}
 GET /api/v1/activity/recent?limit={n}
 ```
 
+## Security hardening
+
+Cross-cutting request handling lives in `app/middleware.py` (PRD §11.1, §14):
+
+- **Request ids** — every request gets an `X-Request-ID` (an inbound one is echoed, otherwise one is generated) and every log line carries it.
+- **Security headers** — `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cross-Origin-Opener-Policy`, and `Permissions-Policy` are set on success and error responses.
+- **Structured errors** — rate-limit and unhandled-error responses return `{ "error": { "code", "message", "request_id", "timestamp" } }`. Internal detail is never exposed.
+- **Rate limiting** — a fixed-window counter, 120 requests/minute per client per route, tightened to 20/minute on `/api/v1/auth` where credential stuffing concentrates. Exceeding it returns `429` with `Retry-After`.
+- **CORS** — restricted to the configured `WEB_ORIGIN`.
+
+`/api/health` and `/api/ready` are exempt from rate limiting. Load balancers poll them frequently, and limiting them would report a false outage during a traffic spike.
+
+> **Scaling note:** the limiter is in-process state. It is correct for a single API process and needs no Redis, but it is **not** cluster-safe — running several API processes behind a load balancer multiplies the effective limit by the process count. Move the counter to shared storage before scaling out. This is the same replaceable-backend pattern used for the job queue.
+
 ## Repository quality scoring
 
 `tools/repo_score` measures this repository across weighted categories and reports a composite grade. It is read-only: it inspects the checkout and never rewrites code.

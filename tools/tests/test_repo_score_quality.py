@@ -8,7 +8,7 @@ from tools.repo_score.checks import ci, cleanliness, documentation, hygiene
 from tools.repo_score.models import Status
 from tools.repo_score.repo import RepoContext
 
-from tests.conftest import _check, healthy_repo, write
+from tools.tests.conftest import _check, healthy_repo, write
 
 # Assembled at runtime so this file does not itself trip the secret scanner.
 FAKE_KEY = "8f2b91" + "c4d7e6a0f3b5c8d1e2f7a9b4c6d"

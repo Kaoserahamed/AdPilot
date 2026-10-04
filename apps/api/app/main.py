@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,6 +15,9 @@ from .activity import router as activity_router
 from .analytics import init_analytics_db, router as analytics_router
 from .analytics_ai import router as analytics_ai_router
 from .config import settings
+from .middleware import install_middleware
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 
 @asynccontextmanager
@@ -33,6 +38,8 @@ app = FastAPI(
     description="Modular API for AI-assisted advertising workflows.",
     lifespan=lifespan,
 )
+
+install_middleware(app)
 
 app.add_middleware(
     CORSMiddleware,
