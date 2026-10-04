@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiRequest, type AuthUser } from './api';
-import { activity, formatSpend, formatUpdated, navItems, toCampaign, type Campaign, type CampaignApi } from './data';
+import { activity, formatCurrency, formatSpend, formatUpdated, navItems, toCampaign, type AnalyticsOverview, type Campaign, type CampaignApi } from './data';
 import Icon from './Icon';
 import Metric from './Metric';
 import StatusPill from './StatusPill';
@@ -10,6 +10,8 @@ import AIStudio from './AIStudio';
 import CreativeLibrary from './CreativeLibrary';
 import ConnectedPlatforms from './ConnectedPlatforms';
 import CampaignReview from './CampaignReview';
+import Publishing from './Publishing';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
 
 
@@ -18,6 +20,20 @@ import AuthScreen from './AuthScreen';
 
 function CampaignsTable({ campaigns, onDelete, loading, error }: { campaigns: Campaign[]; onDelete: (id: number) => void; loading: boolean; error: string | null }) {
   return <section className="panel"><div className="panel-header"><div><h2>Recent campaigns</h2><p>Manage and monitor your latest work</p></div><button className="text-button">View all <Icon name="arrow" size={15} /></button></div>{loading ? <div className="table-state">Loading campaigns…</div> : error ? <div className="table-state error-state">{error}</div> : campaigns.length === 0 ? <div className="table-state"><strong>No campaigns yet</strong><span>Create your first brief to get started.</span></div> : <div className="table-wrap"><table><thead><tr><th>Campaign</th><th>Platforms</th><th>Status</th><th>Spend</th><th>Last updated</th><th /></tr></thead><tbody>{campaigns.map((campaign) => <tr key={campaign.id}><td><div className="campaign-name"><i><Icon name="campaign" size={17} /></i><div><strong>{campaign.name}</strong><small>{campaign.product}</small></div></div></td><td><div className="platforms">{campaign.platforms.map((platform) => <span key={platform}>{platform}</span>)}</div></td><td><StatusPill status={campaign.status} /></td><td className="spend">{formatSpend(campaign)}</td><td className="updated">{formatUpdated(campaign.updatedAt)}</td><td><button className="row-menu delete-campaign" onClick={() => onDelete(campaign.id)} aria-label={`Delete ${campaign.name}`}>×</button></td></tr>)}</tbody></table></div>}</section>;
+}
+
+function OverviewMetrics() {
+  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    apiRequest<AnalyticsOverview>('/api/v1/analytics/overview')
+      .then(setOverview)
+      .catch(() => setOverview(null))
+      .finally(() => setLoading(false));
+  }, []);
+  if (loading) return <div className="metric-grid"><div className="metric-card"><span>Loading…</span></div></div>;
+  if (!overview) return <div className="metric-grid"><Metric label="Total spend" value="—" change="No synced metrics" accent="violet" icon="campaign" /><Metric label="Impressions" value="—" change="Publish and sync" accent="blue" icon="analytics" /><Metric label="Clicks" value="—" change="Publish and sync" accent="green" icon="arrow" /><Metric label="Conversions" value="—" change="Publish and sync" accent="amber" icon="check" /></div>;
+  return <div className="metric-grid"><Metric label="Total spend" value={formatCurrency(overview.total_spend, overview.currency)} change={`Last ${overview.reporting_period_days} days`} accent="violet" icon="campaign" /><Metric label="Impressions" value={overview.total_impressions.toLocaleString('en-US')} change="Reported" accent="blue" icon="analytics" /><Metric label="Clicks" value={overview.total_clicks.toLocaleString('en-US')} change="Reported" accent="green" icon="arrow" /><Metric label="Conversions" value={overview.total_conversions.toLocaleString('en-US')} change="Reported" accent="amber" icon="check" /></div>;
 }
 
 function ActivityPanel() {
@@ -35,21 +51,29 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
   const [campaignsError, setCampaignsError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  useEffect(() => {
-    apiRequest<CampaignApi[]>('/api/v1/campaigns').then((items) => setCampaigns(items.map(toCampaign))).catch((error: unknown) => setCampaignsError(error instanceof Error ? error.message : 'Unable to load campaigns.')).finally(() => setCampaignsLoading(false));
+  const refreshCampaigns = useCallback(async () => {
+    try {
+      setCampaigns((await apiRequest<CampaignApi[]>('/api/v1/campaigns')).map(toCampaign));
+      setCampaignsError(null);
+    } catch (error: unknown) {
+      setCampaignsError(error instanceof Error ? error.message : 'Unable to load campaigns.');
+    } finally {
+      setCampaignsLoading(false);
+    }
   }, []);
+  useEffect(() => { void refreshCampaigns(); }, [refreshCampaigns]);
   const addCampaign = (campaign: Campaign) => { setCampaigns((current) => [campaign, ...current]); setShowCreate(false); setActiveNav('Campaigns'); };
   const removeCampaign = async (id: number) => { await apiRequest(`/api/v1/campaigns/${id}`, { method: 'DELETE' }); setCampaigns((current) => current.filter((campaign) => campaign.id !== id)); };
   const isWorkspace = activeNav === 'Overview' || activeNav === 'Campaigns';
   return <div className="app-shell">
-    <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}><div className="brand"><div className="brand-mark" /><span>adpilot</span><small>BETA</small></div><div className="workspace-switcher"><b>N</b><div><strong>Northstar Studio</strong><small>Personal workspace</small></div><Icon name="chevron" size={15} /></div><nav><p className="nav-label">Workspace</p>{navItems.map((item) => <button className={`nav-item ${activeNav === item.label ? 'active' : ''}`} key={item.label} onClick={() => { setActiveNav(item.label); setMobileNav(false); }}><Icon name={item.icon} /><span>{item.label}</span>{item.count && <em>{item.count}</em>}</button>)}</nav><div className="sidebar-bottom"><button className="nav-item" onClick={() => setActiveNav('Settings')}><Icon name="settings" /><span>Settings</span></button><div className="help-card"><div className="help-spark"><Icon name="spark" size={16} /></div><strong>Meet your copilot</strong><p>Turn one brief into a campaign for every channel.</p><button onClick={() => setShowCreate(true)}>Try it now <Icon name="arrow" size={14} /></button></div><div className="profile"><b>AM</b><div><strong>Alex Morgan</strong><small>alex@northstar.co</small></div><button className="logout-button" onClick={onLogout}>Log out</button></div></div></aside>
+    <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}><div className="brand"><div className="brand-mark" /><span>adpilot</span><small>BETA</small></div><div className="workspace-switcher"><b>N</b><div><strong>Northstar Studio</strong><small>Personal workspace</small></div><Icon name="chevron" size={15} /></div><nav><p className="nav-label">Workspace</p>{navItems.map((item) => <button className={`nav-item ${activeNav === item.label ? 'active' : ''}`} key={item.label} onClick={() => { setActiveNav(item.label); setMobileNav(false); }}><Icon name={item.icon} /><span>{item.label}</span></button>)}</nav><div className="sidebar-bottom"><button className="nav-item" onClick={() => setActiveNav('Settings')}><Icon name="settings" /><span>Settings</span></button><div className="help-card"><div className="help-spark"><Icon name="spark" size={16} /></div><strong>Meet your copilot</strong><p>Turn one brief into a campaign for every channel.</p><button onClick={() => setShowCreate(true)}>Try it now <Icon name="arrow" size={14} /></button></div><div className="profile"><b>AM</b><div><strong>Alex Morgan</strong><small>alex@northstar.co</small></div><button className="logout-button" onClick={onLogout}>Log out</button></div></div></aside>
 
 
 
 
     {mobileNav && <button className="mobile-overlay" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
     <main className="main-content"><header><button className="mobile-menu" onClick={() => setMobileNav(!mobileNav)} aria-label="Toggle navigation"><Icon name="menu" /></button><div className="breadcrumbs"><span>Workspace</span><b>/</b><strong>{activeNav}</strong></div><div className="topbar-actions"><button className="notification" aria-label="Notifications"><Icon name="campaign" /><i /></button><span className="environment"><i />Sandbox mode</span><button className="button button-primary button-small" onClick={() => setShowCreate(true)}><Icon name="plus" size={16} />New campaign</button></div></header><div className="page-content">
-      {activeNav === 'Review & validation' ? <CampaignReview campaigns={campaigns} onConfirmed={() => setActiveNav('Campaigns')} /> : activeNav === 'Connected platforms' ? <ConnectedPlatforms /> : activeNav === 'AI campaign studio' ? <AIStudio campaigns={campaigns} /> : activeNav === 'Creative library' ? <CreativeLibrary campaigns={campaigns} /> : isWorkspace ? <><div className="welcome-row"><div><p className="eyebrow">{activeNav === 'Campaigns' ? 'Campaign workspace' : 'Tuesday, March 24, 2026'}</p><h1>{activeNav === 'Campaigns' ? 'Your campaigns' : 'Good morning, Alex'} <span>✦</span></h1><p className="subtitle">{activeNav === 'Campaigns' ? 'Build, review, and publish every campaign from one place.' : 'Here is what is happening across your ad campaigns.'}</p></div><button className="button button-secondary export-button">Export report <Icon name="external" size={16} /></button></div>{activeNav === 'Overview' && <div className="metric-grid"><Metric label="Total spend" value="$1,932.80" change="+18.4%" accent="violet" icon="campaign" /><Metric label="Impressions" value="284,921" change="+24.8%" accent="blue" icon="analytics" /><Metric label="Clicks" value="8,421" change="+11.2%" accent="green" icon="arrow" /><Metric label="Conversions" value="327" change="+8.6%" accent="amber" icon="check" /></div>}<div className="insight"><div><Icon name="spark" size={21} /></div><p><strong>Your campaigns are gaining momentum</strong><span>Spend is up 18.4% this month, while your cost per conversion is down 6.2%.</span></p><button className="text-button">View insights <Icon name="arrow" size={15} /></button></div><div className="content-grid"><CampaignsTable campaigns={campaigns} onDelete={removeCampaign} loading={campaignsLoading} error={campaignsError} /><ActivityPanel /></div></> : <EmptyState title={activeNav} />}
+      {activeNav === 'Review & validation' ? <CampaignReview campaigns={campaigns} onConfirmed={() => setActiveNav('Publishing')} /> : activeNav === 'Publishing' ? <Publishing campaigns={campaigns} onPublished={refreshCampaigns} /> : activeNav === 'Analytics' ? <AnalyticsDashboard campaigns={campaigns} /> : activeNav === 'Connected platforms' ? <ConnectedPlatforms /> : activeNav === 'AI campaign studio' ? <AIStudio campaigns={campaigns} /> : activeNav === 'Creative library' ? <CreativeLibrary campaigns={campaigns} /> : isWorkspace ? <><div className="welcome-row"><div><p className="eyebrow">{activeNav === 'Campaigns' ? 'Campaign workspace' : 'Tuesday, March 24, 2026'}</p><h1>{activeNav === 'Campaigns' ? 'Your campaigns' : 'Good morning, Alex'} <span>✦</span></h1><p className="subtitle">{activeNav === 'Campaigns' ? 'Build, review, and publish every campaign from one place.' : 'Here is what is happening across your ad campaigns.'}</p></div><button className="button button-secondary export-button">Export report <Icon name="external" size={16} /></button></div>{activeNav === 'Overview' && <OverviewMetrics />}<div className="insight"><div><Icon name="spark" size={21} /></div><p><strong>Your campaigns are gaining momentum</strong><span>Spend is up 18.4% this month, while your cost per conversion is down 6.2%.</span></p><button className="text-button">View insights <Icon name="arrow" size={15} /></button></div><div className="content-grid"><CampaignsTable campaigns={campaigns} onDelete={removeCampaign} loading={campaignsLoading} error={campaignsError} /><ActivityPanel /></div></> : <EmptyState title={activeNav} />}
     </div><footer><span>© 2026 AdPilot</span><span>Sandbox workspace · Data refreshes automatically</span><span><a href="#help">Help center</a><a href="#status"><i />All systems operational</a></span></footer></main>{showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreated={addCampaign} />}</div>;
 }
 

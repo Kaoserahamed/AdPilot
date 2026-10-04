@@ -98,15 +98,88 @@ export type ConnectedAccount = { id: number; platform: string; platform_label: s
 export type PlatformCheck = { platform: string; ready: boolean; errors: string[]; warnings: string[] };
 export type ValidationResult = { campaign_id: number; ready: boolean; errors: string[]; warnings: string[]; platform_checks: PlatformCheck[]; creative_count: number; generated_content_ready: boolean; checked_at: string };
 
+export type PublishingJob = { id: number; campaign_id: number; status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED'; attempt: number; error: string | null; created_at: string; updated_at: string };
+export type PlatformCampaign = { id: number; platform: string; external_campaign_id: string; status: string; detail: string | null; updated_at: string };
+export type CampaignStatusResult = { campaign_id: number; status: string; updated_at: string; platforms: PlatformCampaign[]; jobs: PublishingJob[] };
+export type PublishResponse = { campaign_id: number; status: string; job: PublishingJob; message: string };
+
+export type PlatformBreakdown = {
+  platform: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+  ctr: number | null;
+  cpc: number | null;
+  cpa: number | null;
+  roas: number | null;
+  currency: string;
+  calculated_fields: string[];
+};
+export type CampaignAnalytics = {
+  campaign_id: number;
+  campaign_name: string;
+  status: string;
+  reporting_period_days: number;
+  platforms: PlatformBreakdown[];
+  totals: { spend: number; impressions: number; clicks: number; conversions: number };
+  calculated_fields: string[];
+  synced_at: string | null;
+};
+export type AnalyticsOverview = {
+  reporting_period_days: number;
+  active_campaigns: number;
+  draft_campaigns: number;
+  pending_review_campaigns: number;
+  total_spend: number;
+  total_impressions: number;
+  total_clicks: number;
+  total_conversions: number;
+  currency: string;
+  calculated_fields: string[];
+  platforms: PlatformBreakdown[];
+  campaigns: CampaignAnalytics[];
+};
+
+export type MetricLine = { metric: string; value: number; currency: string; source: string; calculated: boolean; reported_at: string };
+export type AnalysisAnswer = {
+  campaign_id: number;
+  question: string;
+  period_start: string;
+  period_end: string;
+  summary: string;
+  highlights: string[];
+  facts: MetricLine[];
+  data_complete: boolean;
+  unavailable: string[];
+  provider: string;
+  model: string;
+};
+
+export const DERIVED_METRIC_LABELS: Record<string, string> = { ctr: 'CTR', cpc: 'CPC', cpa: 'CPA', roas: 'ROAS' };
+
+export function formatMetric(metric: string, value: number): string {
+  if (DERIVED_METRIC_LABELS[metric]) return `${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+  return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+export function formatCurrency(value: number, currency = 'USD'): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
+}
+
+export function formatNullable(value: number | null, suffix = ''): string {
+  return value === null || value === undefined ? '—' : `${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}${suffix}`;
+}
+
 
 
 
 export const navItems = [
   { label: 'Overview', icon: 'grid' },
-  { label: 'Campaigns', icon: 'campaign', count: 3 },
+  { label: 'Campaigns', icon: 'campaign' },
   { label: 'AI campaign studio', icon: 'spark' },
   { label: 'Review & validation', icon: 'check' },
-
+  { label: 'Publishing', icon: 'external' },
   { label: 'Creative library', icon: 'library' },
   { label: 'Analytics', icon: 'analytics' },
   { label: 'Connected platforms', icon: 'platforms' },
