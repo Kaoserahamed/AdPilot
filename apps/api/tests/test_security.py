@@ -6,13 +6,13 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
-from app.middleware import (
+from app.core import (
     AUTH_RATE_LIMIT,
     DEFAULT_RATE_LIMIT,
     REQUEST_ID_HEADER,
     RateLimit,
 )
+from app.main import app
 
 
 @pytest.fixture()

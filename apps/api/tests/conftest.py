@@ -5,8 +5,7 @@ import logging
 
 import pytest
 
-from app.logging_config import JsonFormatter
-from app.middleware import rate_limit
+from app.core import JsonFormatter, rate_limit
 
 
 class LogCapture(logging.Handler):

@@ -8,12 +8,10 @@ import pytest
 from fastapi.testclient import TestClient
 from tests.conftest import LogCapture
 
-from app import jobs as jobs_module
-from app.jobs import InlineQueue
-from app.logging_config import JsonFormatter, configure_logging, request_id_var
+from app.analytics import build_snapshot
+from app.core import REQUEST_ID_HEADER, InlineQueue, JsonFormatter, configure_logging, request_id_var
+from app.core import jobs as jobs_module
 from app.main import app
-from app.middleware import REQUEST_ID_HEADER
-from app.monitoring import build_snapshot
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00" + b"\x1f\x15\xc4\x89" + b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4" + b"\x00\x00\x00\x00IEND\xaeB`\x82"
 

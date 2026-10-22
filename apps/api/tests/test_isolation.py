@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from app.config import settings
+from app.core import settings
 
 TESTS_DIR = Path(__file__).parent
 

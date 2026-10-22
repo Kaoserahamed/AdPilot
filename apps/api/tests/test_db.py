@@ -10,7 +10,7 @@ import sqlite3
 import pytest
 from fastapi import HTTPException
 
-from app.db import get_connection, owned_campaign
+from app.core import get_connection, owned_campaign
 
 
 @pytest.fixture()
@@ -18,7 +18,7 @@ def db_path(tmp_path, monkeypatch):
     """Point the settings object at a database inside the temporary directory."""
 
     path = tmp_path / "nested" / "helpers.db"
-    monkeypatch.setattr("app.db.settings.auth_db_path", str(path))
+    monkeypatch.setattr("app.core.settings.auth_db_path", str(path))
     return path
 
 

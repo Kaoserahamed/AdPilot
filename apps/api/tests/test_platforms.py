@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.platforms import GoogleAdsAdapter, MetaAdapter, _decrypt_token, _encrypt_token
+from app.publishing import GoogleAdsAdapter, MetaAdapter, _decrypt_token, _encrypt_token
 
 
 @pytest.fixture()
