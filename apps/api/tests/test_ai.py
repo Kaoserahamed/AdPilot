@@ -133,7 +133,7 @@ def test_malformed_provider_output_is_rejected(ai_client: TestClient, monkeypatc
         def edit(self, content: dict[str, object], platform: str, action: str, value: str | None = None) -> dict[str, object]:
             return content
 
-    monkeypatch.setattr("app.ai.get_provider", lambda: InvalidProvider())
+    monkeypatch.setattr("app.ai.routes.get_provider", lambda: InvalidProvider())
     response = ai_client.post("/api/v1/ai/generate-campaign", json={"campaign_id": campaign_id})
 
     assert response.status_code == 422

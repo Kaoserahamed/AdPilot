@@ -8,12 +8,16 @@ single number is not actionable.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class Status(str, Enum):
-    """Outcome of a single check."""
+class Status(StrEnum):
+    """Outcome of a single check.
+
+    ``StrEnum`` rather than ``str, Enum``: the members are rendered straight into
+    reports, and a ``str`` mixin leaves ``str(Status.PASS)`` as ``"Status.PASS"``.
+    """
 
     PASS = "pass"
     WARN = "warn"

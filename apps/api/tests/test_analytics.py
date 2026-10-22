@@ -5,11 +5,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app import jobs as jobs_module
 from app.analytics import _derive
-from app.jobs import InlineQueue
+from app.core import InlineQueue
+from app.core import jobs as jobs_module
 from app.main import app
-from app.platforms import SandboxAdapter
+from app.publishing import SandboxAdapter
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00" + b"\x1f\x15\xc4\x89" + b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4" + b"\x00\x00\x00\x00IEND\xaeB`\x82"
 
