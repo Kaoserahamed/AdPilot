@@ -20,7 +20,6 @@ select = [
 ignore = [
     "E501",   # line length is enforced by the repository scorer, not the linter
     "B008",
-    "UP038",
 ]
 
 [lint.per-file-ignores]
